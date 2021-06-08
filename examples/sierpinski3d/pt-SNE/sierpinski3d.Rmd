@@ -1,0 +1,86 @@
+---
+title: "Sierpinski3d. ptSNE"
+author: |-
+  J.Garriga; F.Bartumeus\
+  ICREA Movement Ecology Laboratory (CEAB-CSIC)\
+  jgarriga@ceab.csic.es
+date: "bigMap_4.5.0, `r format(Sys.Date(), '%b %Y')`"
+output: html_document
+---
+
+```{r, echo = FALSE}
+library(knitr)
+library(kableExtra)
+```
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, }
+library(bigMap)
+```
+
+### ptSNE
+
+```{r, eval = F}
+# load data
+D <- as.matrix(read.csv('../sierpinski3d.mtx', sep = '', header = F))
+# set range of perplexities
+ppx <- round(nrow(D) *c(.01, .05, .1, .2, .3, .4, .5, .6, .7, .8, .9, .95, .99), 0)
+# compute betas
+g <- bdm.init(D, dSet.name = 's3d', is.distance = T, perplexity = ppx, threads = 4)
+# run ptSNE
+g.list <- bdm.ptsne(D, g, lRate = NULL, theta = .0, qlty = T, threads = 1, layers = 1)
+# save
+save(g.list, file = './glist.RData')
+```
+
+```{r, }
+load('./glist.RData')
+```
+
+### embedding cost/size function
+
+```{r, out.width = '33%', fig.show = 'hold'}
+nulL <- lapply(g.list, function(g) bdm.cost(g))
+```
+
+### output
+
+```{r, out.width = '50%', fig.show = 'hold'}
+# source graph plot
+source('../graphs.R')
+# load edge matrix
+E <- as.matrix(read.csv('../sierpinski3d.edg', sep = '', header = F))
+# plot
+nulL <- lapply(g.list, function(g) graph.plot(g, E))
+```
+
+### hl-Correlation
+
+```{r, }
+hlTable <- t(sapply(g.list, function(g) summary(g$hlC)))
+rownames(hlTable) <- sapply(g.list, function(g) g$ppx$ppx)
+knitr::kable(hlTable, caption = 'hl-Correlation') %>%
+  kable_styling(full_width = F)
+```
+
+### Kary-neighborhood preservation
+
+```{r, }
+bdm.knp.plot(g.list, ppxfrmt = 0)
+```
+
+### Running Times
+
+```{r, }
+rTimes <- sapply(g.list, function(g) c(g$ppx$t[3], g$t$epoch, g$t$ptsne[3], (g$ppx$t[3] +g$t$ptsne[3])))
+rTimes <- round(rTimes, 1)
+colnames(rTimes) <- sapply(g.list, function(g) g$ppx$ppx)
+rownames(rTimes) <- c('betas', 'epoch', 'pt-SNE', 'total')
+knitr::kable(rTimes, caption = 'Computation times (s)') %>%
+  kable_styling(full_width = F)
+```
+
+*Run on: Intel(R) Xeon(R) CPU E31225 @ 3.10GHz, 4 cores, 16GB RAM.*
