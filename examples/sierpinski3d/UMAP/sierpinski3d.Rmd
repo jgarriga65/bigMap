@@ -1,0 +1,94 @@
+---
+title: "Sierpinski3d. UMAP"
+author: |-
+  J.Garriga; F.Bartumeus\
+  ICREA Movement Ecology Laboratory (CEAB-CSIC)\
+  jgarriga@ceab.csic.es
+date: "`r format(Sys.Date(), '%b %Y')`"
+output: html_document
+---
+
+```{r, echo = FALSE}
+library(knitr)
+library(kableExtra)
+```
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, }
+library(bigMap)
+```
+
+### Load data
+
+```{r, }
+D <- as.matrix(read.csv('../sierpinski3d.mtx', sep = '', header = F))
+```
+
+### Run UMAP (python implementation, default settings)
+
+```{r, }
+# perplexities
+ppx.list <- round(nrow(D) *c(.01, .05, .1, .2, .3, .4, .5, .6, .7, .8, .9, .95, .99), 0)
+```
+
+```
+Y = umap.UMAP(n_neighbors = ppx, min_dist = 0.1, metric = 'euclidean', init = 'random').fit_transform(D)
+```
+
+### Load UMAP results
+
+```{r, }
+load('./glist.RData')
+```
+
+### Output
+
+```{r, out.width = '33%', fig.show = 'hold'}
+# source graph plot
+source('../graphs.R')
+# load edge matrix
+E <- as.matrix(read.csv('../sierpinski3d.edg', sep = '', header = F))
+# plot
+nulL <- lapply(g.list, function(g) graph.plot(g, E))
+```
+
+### hl-Correlation
+
+```{r, eval = F}
+g.list <- lapply(g.list, function(g) bdm.hlCorr(D, g, zSampleSize = 1000, threads = 4))
+save(g.list, file = './glist.RData')
+```
+
+```{r, }
+hlTable <- t(sapply(g.list, function(g) summary(g$hlC)))
+rownames(hlTable) <- sapply(g.list, function(g) g$ppx$ppx)
+knitr::kable(hlTable, caption = 'hl-Correlation') %>%
+  kable_styling(full_width = F)
+```
+
+### Kary-neighborhood preservation
+
+```{r, eval = F}
+g.list <- lapply(g.list, function(g) bdm.knp(D, g, k.max = NULL, sampling = 0.9, threads = 4))
+save(g.list, file = './glist.RData')
+```
+
+```{r, }
+bdm.knp.plot(g.list, ppxfrmt = 0)
+```
+
+### Running Times
+
+```{r, }
+rTimes <- round(sapply(g.list, function(g) g$t$UMAP), 0)
+rTimes <- matrix(rTimes, nrow = 1)
+colnames(rTimes) <- sapply(g.list, function(g) g$ppx$ppx)
+rownames(rTimes) <- c('UMAP')
+knitr::kable(rTimes, caption = 'Computation times (s)') %>%
+  kable_styling(full_width = F)
+```
+
+*Run on: Intel(R) Xeon(R) CPU E31225 @ 3.10GHz, 4 cores, 16GB RAM.*

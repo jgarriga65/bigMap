@@ -33,9 +33,7 @@
 #' # --- load example dataset
 #' \dontrun{
 #' bdm.example()
-#' m <- bdm.init(exData[, 1:4], dSet.name = 'ex.', perplexity = 250, threads = 4)
-#' m <- bdm.ptsne(exData[, 1:4], m, threads = 4, layers = 2)
-#' m <- bdm.knp(exData[, 1:4], m, threads = 4)
+#' m <- bdm.knp(exData[, 1:4], exMap, threads = 4)
 #' }
 #'
 

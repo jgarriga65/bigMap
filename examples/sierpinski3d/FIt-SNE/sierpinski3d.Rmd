@@ -17,76 +17,70 @@ library(kableExtra)
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-
 ```{r, }
 library(bigMap)
 ```
 
+### Load data
+
+```{r, }
+D <- as.matrix(read.csv('../sierpinski3d.mtx', sep = '', header = F))
+```
+
+### Run Fit-SNE
+
 ```{r, eval = F}
 source('~/FitSNE/fast_tsne.R', chdir = T)
-# load data
-D <- as.matrix(read.csv('../sierpinski3d.mtx', sep = '', header = F))
 # perplexities
 ppx.list <- round(nrow(d) *c(.01, .05, .1, .2, .3, .4, .5, .6, .7, .8, .9, .95, .99), 0)
 #
 g.list <- lapply(ppx.list, function(ppx) {
   t <- system.time(Y <- fftRtsne(D, perplexity = ppx))
-  g <- list(ppx = list(ppx = ppx, xppx = 3), ptsne = list(Y = Y), t = t)
-  g <- bdm.knp(D, g, k.max = NULL, sampling = 0.9, threads = 4)
-  g$hlC <- bdm.hlCorr(m.ppx, d, 1000, T, F, threads = 4)
-  m.ppx
+  # structure results as a bigMap instance
+  g <- list(dSet = 'S3D', is.distance = T, is.sparse = F, normalize = T, ppx = list(ppx = ppx), ptsne = list(Y = Y), t = t)
+  g
 })
 save(g.list, file = './glist.RData')
 ```
 
-```{r, }
+```{r, echo = F}
 load('./glist.RData')
-```
-
-```{r, }
-sapply(g.list, function(g) g$Xbeta$ppx)
 ```
 
 ### Output
 
-```{r, echo = FALSE, eval = FALSE}
-bdm.source('graphs')
-graph.dev(g.list, './', xRes = 2, cex = 0.7, lwd = 0.5, bg = '#222222')
-```
-
-```{r, echo = F, out.width = '33%', fig.show = 'hold'}
-knitr::include_graphics(c('./ppx20.png', './ppx102.png', './ppx205.png'))
-```
-
-```{r, echo = F, out.width = '33%', fig.show = 'hold'}
-knitr::include_graphics(c('./ppx410.png', './ppx615.png', './ppx820.png'))
-```
-
-```{r, echo = F, out.width = '33%', fig.show = 'hold'}
-knitr::include_graphics(c('./ppx1025.png', './ppx1230.png', './ppx1435.png'))
-```
-
-```{r, echo = F, out.width = '33%', fig.show = 'hold'}
-knitr::include_graphics(c('./ppx1640.png', './ppx1845.png', './ppx1948.png'))
-```
-
-```{r, echo = F, out.width = '33%', fig.show = 'hold'}
-knitr::include_graphics(c('./ppx2030.png'))
+```{r, out.width = '33%', fig.show = 'hold'}
+# source graph plot
+source('../graphs.R')
+# load edge matrix
+E <- as.matrix(read.csv('../sierpinski3d.edg', sep = '', header = F))
+# plot
+nulL <- lapply(g.list, function(g) graph.plot(g, E))
 ```
 
 ### hl-Correlation
 
+```{r, eval = F}
+g.list <- lapply(g.list, function(g) bdm.hlCorr(D, g, zSampleSize = 1000, threads = 4))
+save(g.list, file = './glist.RData')
+```
+
 ```{r, }
 hlTable <- t(sapply(g.list, function(g) summary(g$hlC)))
-rownames(hlTable) <- sapply(g.list, function(g) g$Xbeta$ppx)
+rownames(hlTable) <- sapply(g.list, function(g) g$ppx$ppx)
 knitr::kable(hlTable, caption = 'hl-Correlation') %>%
   kable_styling(full_width = F)
 ```
 
 ### Kary-neighborhood preservation
 
+```{r, eval = F}
+g.list <- lapply(g.list, function(g) bdm.knp(D, g, k.max = NULL, sampling = 0.9, threads = 4))
+save(g.list, file = './glist.RData')
+```
+
 ```{r, }
-bdm.qlty.plot(g.list, qm = 'kn', ppxfrmt = 2)
+bdm.knp.plot(g.list, ppxfrmt = 0)
 ```
 
 ### Running Times
@@ -94,7 +88,7 @@ bdm.qlty.plot(g.list, qm = 'kn', ppxfrmt = 2)
 ```{r, }
 rTimes <- round(sapply(g.list, function(m) m$t$fitSNE[[3]]), 0)
 rTimes <- matrix(rTimes, nrow = 1)
-colnames(rTimes) <- sapply(g.list, function(m) m$Xbeta$ppx)
+colnames(rTimes) <- sapply(g.list, function(m) m$ppx$ppx)
 rownames(rTimes) <- c('FitSNE')
 knitr::kable(rTimes, caption = 'Computation times (s)') %>%
   kable_styling(full_width = F)

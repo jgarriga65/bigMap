@@ -32,9 +32,7 @@
 #' # --- load example dataset
 #' \dontrun{
 #' bdm.example()
-#' m <- bdm.init(example.data, perplexity = 250, threads = 4)
-#' m <- bdm.ptsne(example.data, m, threads = 4, layers = 2)
-#' m <- bdm.hlCorr(example.data, m, threads = 4)
+#' m <- bdm.hlCorr(exData[, 1:4], exMap, threads = 4)
 #' }
 #'
 
