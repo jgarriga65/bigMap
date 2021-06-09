@@ -3,7 +3,8 @@ package/.Rhistory
 package/.RData
 package/.Ruserdata
 package/Rplots.pdf
-package/package.proj
-package/bigMap.rproj
-
+package/package.Rproj
+package/.Rbuildignore
+package/bigMap.Rproj
+bigMap.Rcheck
 .Rproj.user

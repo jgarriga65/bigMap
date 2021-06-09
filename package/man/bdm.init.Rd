@@ -10,7 +10,7 @@ bdm.init(
   is.distance = F,
   is.sparse = F,
   normalize = T,
-  perplexity = 100,
+  ppx = 100,
   dSet.labels = NULL,
   threads = 4,
   mpi.cl = NULL
@@ -27,7 +27,7 @@ bdm.init(
 
 \item{normalize}{A logical value (TRUE by default). By default data is normalized before computing affinities. Set to FALSE to override this default behaviour (for instance if the input data is already normalized).}
 
-\item{perplexity}{The value of perplexity to compute similarities (default value is 100).}
+\item{ppx}{The value of perplexity to compute similarities (default value is 100).}
 
 \item{dSet.labels}{If available, labels can be included as a separate vector of length equal to \code{nrow(dSet.data)}. Label values are factorized as \code{as.numeric(as.factor(labels))}.}
 
@@ -47,6 +47,6 @@ Computes the precision parameters beta_i for the given perplexity (local bandwid
 bdm.example()
 # --- perform ptSNE
 \dontrun{
-myMap <- bdm.init(exData[, 1:4], dSet.name = 'ex', perplexity = 250, labels = exData[, 5])
+myMap <- bdm.init(exData[, 1:4], dSet.name = 'ex', ppx = 250, labels = exData[, 5])
 }
 }

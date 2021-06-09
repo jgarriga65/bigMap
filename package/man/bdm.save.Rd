@@ -13,18 +13,15 @@ bdm.save(...)
 None
 }
 \description{
-Saves a \var{bdm} instance with default path/file names, as given by \code{bdm.mybdm()/bdm.fName(bdm)}. Default file name is generated based on \code{bdm$dSet} and ptSNE main parameters (threads, layers, boost, rounds, perplexity).  The purpose of functions \code{bdm.save()} and \code{bdm.scp()} used with \code{bdm.fName()} is to ease the task of working/organizing multiple runs on the same dataset.
+Saves a \var{bdm} instance with default path/file names, as given by \code{bdm.mybdm()/bdm.fName(bdm)}. Default file name is generated based on \code{bdm$dSet} and perplexity.  The purpose of functions \code{bdm.save()} and \code{bdm.scp()} used with \code{bdm.fName()} is to ease the task of working/organizing multiple runs on the same dataset.
 }
 \examples{
 
-# --- get a matrix with raw-data
-mydata <- cbind(rnorm(10000, mean = 0, sd = 3),  ncol = 2)
-mylabels <- apply(mydata, 1, function(row) round(sqrt(sum(row**2)), 0))
-# --- create a \var{bdm} instance with our raw-data matrix
-mybdm <- bdm.init('mydataset', mydata, labels = mylabels)
-str(mybdm)
+bdm.example()
 # --- save it
 \dontrun{
+mybdm <- bdm.init(exData[, 1:4], dSet.name = 'myEx', ppx = 50, dSet.labels = exData[, 5])
+str(mybdm)
 bdm.save(mybdm)
 }
 }

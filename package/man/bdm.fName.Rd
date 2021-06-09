@@ -16,12 +16,12 @@ A \var{*.RData} file name based on \var{bdm$dSet} and main \var{bdm} parameters.
 Generates a default file name. The default file name is intended for functions \code{bdm.save()} and \code{bdm.scp()} to ease the task of working/organizing multiple runs on the same dataset.
 }
 \details{
-The file name is generated based on \code{bdm$dSet} and main ptSNE parameters (threads, layers, rounds, boost and perplexity). In case that \code{bdm.wtt()} has been performed on any of the layers, the number of clusters in the first not null layer of bdm$wtt is also included.
+The file name is generated based on \code{bdm$dSet} and perplexity. If \code{!is.null(bdm$wtt)} the number of clusters is also included.
 }
 \examples{
 
 bdm.example()
 str(exMap$dSet)
-str(exMap$ptsne)
+str(exMap$ppx)
 bdm.fName(exMap)
 }

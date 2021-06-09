@@ -2,10 +2,8 @@
 # +++ recursive merging of clusters based on signal-to-noise-ratio (S2NR)
 # -----------------------------------------------------------------------------
 
-s2nr.merge <- function(bdm, X, k = 10, verbose = T, layer = 1)
+s2nr.merge <- function(X, bdm, k = 10, verbose = T, layer = 1)
 {
-	# # input data
-	# X <- Xdata.get(raw.data, bdm$Xdata$whiten, bdm$Xdata$input.dim, bdm$is.distance)$inp.data
 	# output data
 	l <- c(1, 2) + (layer -1) *2
 	Y <- bdm$ptsne$Y[, l]
@@ -201,7 +199,7 @@ s2nr.info <- function(H, B = NULL)
 # +++ find optimal number of lcusters (by recursive merging based on S2NR)
 # -----------------------------------------------------------------------------
 
-s2nr.optk <- function(bdm, X, verbose = T, layer = 1)
+s2nr.optk <- function(X, bdm, verbose = T, layer = 1)
 {
 	# output data
 	l <- c(1, 2) + (layer -1) *2

@@ -18,6 +18,6 @@ The function \code{bdm.optk.sn2r()} computes the S2NR that results from recursiv
 \examples{
 
 bdm.example()
-exMap <- bdm.optk.s2nr(exMap, ret.optk = TRUE)
+exMap <- bdm.optk.s2nr(exData[, 1:4], exMap, ret.optk = TRUE)
 bdm.optk.plot(exMap)
 }

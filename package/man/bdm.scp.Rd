@@ -15,7 +15,7 @@ bdm.scp(..., dest = NULL)
 None
 }
 \description{
-Transfers a \var{bdm} instance to a remote machine. By default a file name is generated based on \code{bdm$dSet} and t-SNE main parameters (threads, layers, rounds, perplexity). The purpose of functions \code{bdm.save()} and \code{bdm.scp()} used with \code{bdm.fName()} is to ease the task of working/organizing multiple runs on the same dataset.
+Transfers a \var{bdm} instance to a remote machine. By default a file name is generated based on \code{bdm$dSet} and perplexity. The purpose of the functions \code{bdm.save()} and \code{bdm.scp()} used with \code{bdm.fName()} is to ease the task of working/organizing multiple runs on the same dataset.
 }
 \examples{
 
@@ -24,7 +24,7 @@ Transfers a \var{bdm} instance to a remote machine. By default a file name is ge
 bdm.example()
 # --- scp to \var{bdm.local()} with default file name
 bdm.scp(exMap)
-# --- scp to IP address 'xxx.xxx.0.0' with default file name
-bdm.scp(exMap, dest = 'xxx.xxx.0.0')
+# --- scp to IP address '10.1.1.1' with default file name
+bdm.scp(exMap, dest = '10.1.1.1')
 }
 }
