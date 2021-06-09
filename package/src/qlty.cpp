@@ -304,7 +304,7 @@ arma::Col<double> z_rbQlty(SEXP sexpX, SEXP sexpY, const arma::Col<int>& I, bool
 
 // k-ary neighbourhood preservation
 // [[Rcpp::export]]
-arma::Mat<int> z_knQlty(int thread_rank, int threads, SEXP sexpX, SEXP sexpY, bool is_distance, bool is_sparse, const arma::Col<int>& K, double sampling)
+arma::Mat<int> z_kNP(int thread_rank, int threads, SEXP sexpX, SEXP sexpY, bool is_distance, bool is_sparse, const arma::Col<int>& K, double sampling)
 {
 	// input data
 	sqDist* sqDistX = new sqDist(sexpX);

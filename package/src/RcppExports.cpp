@@ -98,9 +98,9 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// z_knQlty
-arma::Mat<int> z_knQlty(int thread_rank, int threads, SEXP sexpX, SEXP sexpY, bool is_distance, bool is_sparse, const arma::Col<int>& K, double sampling);
-RcppExport SEXP _bigMap_z_knQlty(SEXP thread_rankSEXP, SEXP threadsSEXP, SEXP sexpXSEXP, SEXP sexpYSEXP, SEXP is_distanceSEXP, SEXP is_sparseSEXP, SEXP KSEXP, SEXP samplingSEXP) {
+// z_kNP
+arma::Mat<int> z_kNP(int thread_rank, int threads, SEXP sexpX, SEXP sexpY, bool is_distance, bool is_sparse, const arma::Col<int>& K, double sampling);
+RcppExport SEXP _bigMap_z_kNP(SEXP thread_rankSEXP, SEXP threadsSEXP, SEXP sexpXSEXP, SEXP sexpYSEXP, SEXP is_distanceSEXP, SEXP is_sparseSEXP, SEXP KSEXP, SEXP samplingSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -112,7 +112,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< bool >::type is_sparse(is_sparseSEXP);
     Rcpp::traits::input_parameter< const arma::Col<int>& >::type K(KSEXP);
     Rcpp::traits::input_parameter< double >::type sampling(samplingSEXP);
-    rcpp_result_gen = Rcpp::wrap(z_knQlty(thread_rank, threads, sexpX, sexpY, is_distance, is_sparse, K, sampling));
+    rcpp_result_gen = Rcpp::wrap(z_kNP(thread_rank, threads, sexpX, sexpY, is_distance, is_sparse, K, sampling));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -368,7 +368,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_bigMap_centerScale", (DL_FUNC) &_bigMap_centerScale, 3},
     {"_bigMap_z_spQlty", (DL_FUNC) &_bigMap_z_spQlty, 5},
     {"_bigMap_z_rbQlty", (DL_FUNC) &_bigMap_z_rbQlty, 4},
-    {"_bigMap_z_knQlty", (DL_FUNC) &_bigMap_z_knQlty, 8},
+    {"_bigMap_z_kNP", (DL_FUNC) &_bigMap_z_kNP, 8},
     {"_bigMap_z_hlCorr", (DL_FUNC) &_bigMap_z_hlCorr, 5},
     {"_bigMap_grid_init", (DL_FUNC) &_bigMap_grid_init, 2},
     {"_bigMap_grid_p2cell", (DL_FUNC) &_bigMap_grid_p2cell, 3},

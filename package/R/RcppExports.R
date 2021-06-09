@@ -25,8 +25,8 @@ z_rbQlty <- function(sexpX, sexpY, I, is_distance) {
     .Call(`_bigMap_z_rbQlty`, sexpX, sexpY, I, is_distance)
 }
 
-z_knQlty <- function(thread_rank, threads, sexpX, sexpY, is_distance, is_sparse, K, sampling) {
-    .Call(`_bigMap_z_knQlty`, thread_rank, threads, sexpX, sexpY, is_distance, is_sparse, K, sampling)
+z_kNP <- function(thread_rank, threads, sexpX, sexpY, is_distance, is_sparse, K, sampling) {
+    .Call(`_bigMap_z_kNP`, thread_rank, threads, sexpX, sexpY, is_distance, is_sparse, K, sampling)
 }
 
 z_hlCorr <- function(sexpX, sexpY, zSampleSize, is_distance, is_sparse) {

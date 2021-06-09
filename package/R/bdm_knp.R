@@ -54,9 +54,9 @@ bdm.knp <- function(data, bdm, k.max = NULL, sampling = 0.9, threads = 4, mpi.cl
 	nY <- nrow(bdm$ptsne$Y)
 	if (is.null(k.max)) k.max <- nY -1
 	t <- system.time({
-		bdm$kNP <- qlty.get.kn(cl, nY, k.max, sampling)
+		bdm$kNP <- kNP.get(cl, nY, k.max, sampling)
 	})
-	cat('+++ linAUC', bdm$knQ$AUC[1], ', logAUC', bdm$knQ$AUC[2], '\n', sep = ' ')
+	cat('+++ linAUC', bdm$kNP$AUC[1], ', logAUC', bdm$kNP$AUC[2], '\n', sep = ' ')
 	print(t)
 	bdm$t$kNP <- t
 	stopCluster(cl)
@@ -67,13 +67,13 @@ bdm.knp <- function(data, bdm, k.max = NULL, sampling = 0.9, threads = 4, mpi.cl
 # +++ knp internal functions
 # ------------------------------------------------------------------------------
 
-qlty.get.kn <- function(cl, nY, k.max, sampling)
+kNP.get <- function(cl, nY, k.max, sampling)
 {
 	#. k-ary neighborhoods
 	K <- unique(ceiling(2**(seq(1, log2(k.max -4), length.out = 100))))
 	#. k-ary Q
 	clusterExport(cl, c('K', 'sampling'), envir = environment())
-	Q.list <- clusterCall(cl, thread.qlty.kn)
+	Q.list <- clusterCall(cl, thread.kNP)
 	Q <- sapply(Q.list[2: length(Q.list)], function(chnk.Q) apply(chnk.Q, 2, sum))
 	n <- sum(sapply(Q.list[2: length(Q.list)], function(chnk.Q) nrow(chnk.Q)))
 	Q <- apply(Q, 1, sum) /(K *n)
@@ -83,47 +83,12 @@ qlty.get.kn <- function(cl, nY, k.max, sampling)
 	return(list(k.max = k.max, sampling = sampling, K = K, Q = Q, R = R, AUC = c(linAUC, logAUC)))
 }
 
-thread.qlty.kn <- function()
+thread.kNP <- function()
 {
 	if (thread.rank != 0) {
-		z_knQlty(thread.rank, threads, Xbm@address, Ybm@address, is.distance, is.sparse, K, sampling)
+		z_kNP(thread.rank, threads, Xbm@address, Ybm@address, is.distance, is.sparse, K, sampling)
 	}
 }
-
-thread.qlty.kn.R <- function()
-{
-	if (thread.rank == 0) return(0)
-	chnk.brks <- round(seq(1, n +1, length.out = (threads +1)), 0)
-	chnk.size <- chnk.brks[thread.rank +1] -chnk.brks[thread.rank]
-	chnk.Q <- matrix(rep(0, chnk.size *length(K)), c(chnk.size, length(K)))
-	#. squared Y components
-	Y2 <- apply(Ybm[, ]**2, 1, sum)
-	#. squared X components
-	if (!is.distance && !is.sparse) X2 <- apply(Xbm[, ]**2, 1, sum)
-	#
-	z <- 1
-	for (i in chnk.brks[thread.rank]:(chnk.brks[thread.rank +1] -1))
-	{
-		# H-space distance/ranks
-		if (is.distance) {
-			Hij <- sort(Xbm[i, ], index.return = T)$ix
-		} else if (is.sparse) {
-			Dij <- sprsDist_R(Xbm@address, (i -1))	# C++ indexes
-			Hij <- sort(Dij, index.return = T)$ix
-		} else {
-			Dij <- X2[i] +X2 -2 *(Xbm[i, ] %*%  t(Xbm[, ]))
-			Hij <- sort(Dij, index.return = T)$ix
-		}
-		# L-space distance/ranks
-		Dij <- Y2[i] +Y2 -2 *(Ybm[i, ] %*%  t(Ybm[, ]))
-		Lij <- sort(Dij, index.return = T)$ix
-		# k-ary preservation
-		chnk.Q[z, ] <- sapply(K, function(k) length(intersect(Hij[1:k], Lij[1:k])))
-		z <- z +1
-	}
-	return(chnk.Q)
-}
-
 
 # -----------------------------------------------------------------------------
 # +++ knp plot
@@ -131,30 +96,30 @@ thread.qlty.kn.R <- function()
 
 bdm.knp.plot <- function(bdm, ppxfrmt = 0)
 {
-	if (is.null(bdm$dSet)) qlty.plot.kn.list(bdm, ppxfrmt = ppxfrmt)
-	else qlty.plot.kn(bdm)
+	if (is.null(bdm$dSet)) kNP.plot.list(bdm, ppxfrmt = ppxfrmt)
+	else kNP.plot(bdm)
 }
 
-qlty.plot.kn <- function(bdm, par.set = T)
+kNP.plot <- function(bdm, par.set = T)
 {
 	if (par.set) {
 		parbdm.set(oma = c(2.0, 2.0, 2.0, 2.0), mar = c(3.0, 3.0, 1.5, 1.5))
 		layout(matrix(1:2, nrow = 2))
 	}
 	# plot R vs K
-	plot(bdm$knQ$K, bdm$knQ$R, type = 'l', col = 4, xlab = 'K', ylab = 'Rnx(K)', ylim= c(0.0, 1.0))
+	plot(bdm$kNP$K, bdm$kNP$R, type = 'l', col = 4, xlab = 'K', ylab = 'Rnx(K)', ylim= c(0.0, 1.0))
 	# plot R vs log10(K)
-	plot(log10(bdm$knQ$K), bdm$knQ$R, type = 'l', col = 4, xlab = 'log10(K)', ylab = 'Rnx(K)', ylim= c(0.0, 1.0))
+	plot(log10(bdm$kNP$K), bdm$kNP$R, type = 'l', col = 4, xlab = 'log10(K)', ylab = 'Rnx(K)', ylim= c(0.0, 1.0))
 	# title AUC
 	ppx <- dotfrmt(bdm$ppx$ppx /nrow(bdm$ptsne$Y), 3)
-	linAUC <- knformat(bdm$knQ$AUC[1], 4)
-	logAUC <- knformat(bdm$knQ$AUC[2], 4)
+	linAUC <- knformat(bdm$kNP$AUC[1], 4)
+	logAUC <- knformat(bdm$kNP$AUC[2], 4)
 	title(main = paste('ppx ', ppx, ' linAUC ', linAUC, ' logAUC ', logAUC), cex.main = 0.8)
 	#
 	if (par.set) parbdm.def()
 }
 
-qlty.plot.kn.list <- function(m.list, ppxfrmt = 1, log.k = T, par.set = T)
+kNP.plot.list <- function(m.list, ppxfrmt = 1, log.k = T, par.set = T)
 {
 	if (par.set) {
 		parbdm.set(oma = c(2.0, 2.0, 2.0, 2.0), mar = c(3.0, 3.0, 1.5, 1.5))
@@ -163,20 +128,20 @@ qlty.plot.kn.list <- function(m.list, ppxfrmt = 1, log.k = T, par.set = T)
 	# palette
 	pltt <- rainbow(length(m.list))
 	# plot R vs K
-	K <- m.list[[1]]$knQ$K
+	K <- m.list[[1]]$kNP$K
 	plot(K, rep(0, length(K)), type = 'n', xlab = 'K', ylab = 'Rnx(K)', ylim= c(0.0, 1.0))
 	nulL <- lapply(seq_along(m.list), function(i) {
 		bdm <- m.list[[i]]
-		K <- bdm$knQ$K
-		points(K, bdm$knQ$R, col = pltt[i], type = 'l')
+		K <- bdm$kNP$K
+		points(K, bdm$kNP$R, col = pltt[i], type = 'l')
 	})
 	# plot R vs log10(K)
-	K <- log10(m.list[[1]]$knQ$K)
+	K <- log10(m.list[[1]]$kNP$K)
 	plot(K, rep(0, length(K)), type = 'n', xlab = 'log10(K)', ylab = 'Rnx(K)', ylim= c(0.0, 1.0))
 	nulL <- lapply(seq_along(m.list), function(i) {
 		bdm <- m.list[[i]]
-		K <- log10(bdm$knQ$K)
-		points(K, bdm$knQ$R, col = pltt[i], type = 'l')
+		K <- log10(bdm$kNP$K)
+		points(K, bdm$kNP$R, col = pltt[i], type = 'l')
 	})
 	# plot legend
 	par(mar = c(3.0, 1.0, 1.5, 0.5))
@@ -187,8 +152,8 @@ qlty.plot.kn.list <- function(m.list, ppxfrmt = 1, log.k = T, par.set = T)
 		if (i == 0) ' linAUC logAUC   ppx. '
 		else {
 			bdm <- m.list[[i]]
-			linAUC <- knformat(bdm$knQ$AUC[1], 4)
-			logAUC <- knformat(bdm$knQ$AUC[2], 4)
+			linAUC <- knformat(bdm$kNP$AUC[1], 4)
+			logAUC <- knformat(bdm$kNP$AUC[2], 4)
 			if (ppxfrmt == 0) {
 				ppx <- format(bdm$ppx$ppx, width = 6)
 			} else {
