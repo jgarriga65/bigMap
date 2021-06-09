@@ -1,0 +1,107 @@
+---
+title: "Sierpinski3d. Speed/Accuracy trade-off"
+author: |-
+  J.Garriga; F.Bartumeus\
+  ICREA Movement Ecology Laboratory (CEAB-CSIC)\
+  jgarriga@ceab.csic.es
+date: "Version 4.5.0, `r format(Sys.Date(), '%b %Y')`"
+output: html_document
+---
+
+```{r, echo = FALSE}
+library(knitr)
+library(kableExtra)
+```
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, }
+library(bigMap)
+```
+
+### Load data
+
+```{r, }
+D <- as.matrix(read.csv('../sierpinski3d.mtx', sep = '', header = F))
+```
+
+### Compute betas
+
+```{r, eval = F, results = F}
+g <- bdm.init(D, dSet.name = 'S3D', is.distance = T, ppx = 2030, threads = 4)
+str(g)
+```
+
+### Run ptSNE (perplexity = 2030, decreasing thread-ratio)
+
+```{r, eval = F, results = F}
+g1 <- bdm.ptsne(D, g, threads = 1, layers = 1)
+g2 <- bdm.ptsne(D, g, threads = 3, layers = 2)
+g3 <- bdm.ptsne(D, g, threads = 4, layers = 2)
+g4 <- bdm.ptsne(D, g, threads = 5, layers = 2)
+g5 <- bdm.ptsne(D, g, threads = 6, layers = 2)
+g6 <- bdm.ptsne(D, g, threads = 8, layers = 2)
+```
+
+```{r, eval = F}
+g.list <- list(g1, g2, g3, g4, g5, g6)
+save(g.list, file = './fig2.RData')
+```
+
+```{r, echo = F}
+load('./fig2.RData')
+```
+
+### Output
+
+```{r, out.width = '33%', fig.show = 'hold'}
+# source graph plot
+source('../graphs.R')
+# load edge matrix
+E <- as.matrix(read.csv('../sierpinski3d.edg', sep = '', header = F))
+# plot
+nulL <- lapply(g.list, function(g) graph.plot(g, E))
+```
+
+### hl-Correlation
+
+```{r, eval = F}
+g.list <- lapply(g.list, function(g) bdm.hlCorr(D, g, zSampleSize = 1000, threads = 4))
+save(g.list, file = './fig2.RData')
+```
+
+```{r, }
+hlTable <- sapply(g.list, function(g) summary(g$hlC))
+hlTable <- t(round(hlTable, 4))
+threadRatio <- sapply(g.list, function(g) g$ptsne$layers /g$ptsne$threads)
+rownames(hlTable) <- round(threadRatio, 2)
+knitr::kable(hlTable, caption = 'hl-Correlation by thread-ratio') %>%
+  kable_styling(full_width = F)
+```
+
+### Kary-neighborhood preservation
+
+```{r, eval = F}
+g.list <- lapply(g.list, function(g) bdm.knp(D, g, k.max = NULL, sampling = 0.9, threads = 4))
+save(g.list, file = './fig2.RData')
+```
+
+```{r, }
+bdm.knp.plot(g.list, ppxfrmt = 0)
+```
+
+### Running Times
+
+```{r, }
+rTimes <- sapply(g.list, function(g) c(g$ppx$t[3], g$t$epoch, g$t$ptsne[3], sum(c(g$ppx$t[3], g$t$ptsne[3]))))
+rTimes <- round(rTimes, 2)
+threadRatio <- sapply(g.list, function(g) g$ptsne$layers /g$ptsne$threads)
+colnames(hlTable) <- round(threadRatio, 2)
+rownames(rTimes) <- c('betas', 'epoch', 'ptSNE', 'total')
+knitr::kable(rTimes, caption = 'Computation times (s) by thread-ratio') %>%
+  kable_styling(full_width = F)
+```
+
+*Run on: Intel(R) Xeon(R) CPU E31225 @ 3.10GHz, 4 cores, 16GB RAM.*
