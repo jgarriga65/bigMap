@@ -1,8 +1,9 @@
-.Rproj.user
-.Rhistory
-.RData
-.Ruserdata
-Rplots.pdf
-package.proj
-bigMap.rproj
+package/.Rproj.user
+package/.Rhistory
+package/.RData
+package/.Ruserdata
+package/Rplots.pdf
+package/package.proj
+package/bigMap.rproj
 
+.Rproj.user
