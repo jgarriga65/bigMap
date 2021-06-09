@@ -41,13 +41,20 @@ bdm.hlCorr <- function(data, bdm, zSampleSize = 1000, threads = 4, mpi.cl = NULL
 	cl <- cluster.start(threads, mpi.cl)
 	# . input data (if using mpi.cl it might have been already exported)
 	if (is.null(mpi.cl) || !is.null(data)) {
+		cat('+++ exporting input data \n')
 		Xdata.exp(cl, data, bdm$is.distance, bdm$is.sparse, bdm$normalize)
 	}
+	cat('+++ exporting output data \n')
 	Ydata.exp(cl, t(bdm$ptsne$Y))
+	cat('+++ computing hl-Correlation \n')
 	clusterExport(cl, c('zSampleSize'), envir=environment())
-	bdm$hlCorr <- unlist(clusterCall(cl, thread.hlCorr))
+	t <- system.time({
+		bdm$hlCorr <- unlist(clusterCall(cl, thread.hlCorr))
+	})
 	print(summary(bdm$hlCorr))
-	if (is.null(mpi.cl)) cluster.stop(cl)
+	print(t)
+	bdm$t$hlC <- t
+	cluster.stop(cl)
 	return(bdm)
 }
 

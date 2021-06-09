@@ -54,10 +54,11 @@ bdm.knp <- function(data, bdm, k.max = NULL, sampling = 0.9, threads = 4, mpi.cl
 	nY <- nrow(bdm$ptsne$Y)
 	if (is.null(k.max)) k.max <- nY -1
 	t <- system.time({
-		bdm$knQ <- qlty.get.kn(cl, nY, k.max, sampling)
+		bdm$kNP <- qlty.get.kn(cl, nY, k.max, sampling)
 	})
 	cat('+++ linAUC', bdm$knQ$AUC[1], ', logAUC', bdm$knQ$AUC[2], '\n', sep = ' ')
 	print(t)
+	bdm$t$kNP <- t
 	stopCluster(cl)
 	return(bdm)
 }
