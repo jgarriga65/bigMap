@@ -1,0 +1,115 @@
+---
+title: "Tasic_2018"
+author: |-
+  J.Garriga; F.Bartumeus\
+  ICREA Movement Ecology Laboratory (CEAB-CSIC)\
+  jgarriga@ceab.csic.es
+date: "BigMap_4.5.0, `r format(Sys.Date(), '%b %Y')`"
+output: html_document
+---
+
+```{r, echo = FALSE}
+library(knitr)
+library(kableExtra)
+```
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, }
+library(bigMap)
+```
+
+### Load data
+
+```{r, }
+load('./tsc50.RData')
+# 50 Principal components + related stuff (labels, color-palette, names, first 2 PC)
+str(tsc50)
+```
+
+### Run pt-SNE
+
+Run the script below using a HPC node with 20 cores:
+
+```
+
+# +++ load data
+load('./tsc50.RData')
+X50 <- tsc50$data
+
+# +++ initialize for a range of perplexities
+ppx <- round(nrow(X50) * c(.001, .005, .01, .05, .10, .20), 0)
+m <- bdm.init(X50, dSet.name = 'Tasic50', ppx = ppx, threads = 20, dSet.labels = tsc50$lbls)
+
+# +++ run ptSNE (20 threads, 2 layers)
+m.list <- bdm.ptsne(X50, m, lRate = NULL, theta = .0, threads = 20, layers = 2)
+save(m.list, file = './mlist.RData')
+
+# +++ k-ary neighborhood preservation
+m.list <- lapply(m.list, function(m){
+        bdm.knp(X50, m, k.max = NULL, sampling = 0.9, threads = 20)
+})
+save(m.list, file = './mlist.RData')
+
+# +++ HD/LD Correlation
+m.list <- lapply(m.list, function(m){
+        bdm.hlCorr(X50, m, zSampleSize = 1000, threads = 20)
+})
+save(m.list, file = '/mlist.RData')
+
+```
+
+### Load results
+
+```{r, }
+load('./mlist.RData')
+```
+
+### Embedding cost/size function
+
+```{r, out.width = '33%', fig.show = 'hold'}
+nulL <- lapply(m.list, function(m) bdm.cost(m))
+```
+
+### Embedding
+
+```{r, echo = FALSE, out.width = '33%', fig.show = 'hold'}
+nulL <- lapply(m.list, function(m) {
+  bdm.ptsne.plot(m, ptsne.cex = 0.5, class.pltt = tsc50$pltt)
+})
+```
+
+<!-- ### Beta quantile maps -->
+
+<!-- ```{r, out.width = '33%', fig.show = 'hold'} -->
+<!-- nulL <- lapply(m.list, function(m) bdm.qMap.beta(m)) -->
+<!-- ``` -->
+
+### hl-Correlation
+
+```{r, }
+hlTable <- t(sapply(m.list, function(m) summary(m$hlC)))
+rownames(hlTable) <- sapply(m.list, function(m) m$ppx$ppx)
+knitr::kable(hlTable, caption = 'hl-Correlation') %>%
+  kable_styling(full_width = F)
+```
+
+### Kary-neighborhood preservation
+
+```{r, }
+bdm.knp.plot(m.list, ppxfrmt = 0)
+```
+
+### Running Times
+
+```{r, }
+rTimes <- sapply(m.list, function(m) c(m$ppx$t[3], m$t$epoch, m$t$ptsne[3], (m$ppx$t[3] +m$t$ptsne[3])))
+rTimes <- round(rTimes /60, 2)
+colnames(rTimes) <- sapply(m.list, function(m) m$ppx$ppx)
+rownames(rTimes) <- c('betas', 'epoch', 'ptsne', 'total')
+knitr::kable(rTimes, caption = 'Computation times (min)') %>%
+  kable_styling(full_width = F)
+```
+
+*Run on: Intel(R) Xeon(R) CPU E5-2650 v3 2.30GHz, 32Mb cache, 20 cores, 4GB/core RAM.*
