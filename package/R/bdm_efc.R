@@ -50,10 +50,7 @@ bdm.efc <- function(dSet.data, m, ppx = ppx, iters = 1, lRate = NULL, theta = .0
 	m.list <- list(m)
 	# +++ start cluster
 	cl <- cluster.start(threads, mpi.cl)
-	# +++ export input data
-	nX <- nrow(dSet.data)
-	mX <- ncol(dSet.data)
-	# . input data (if using mpi.cl it might have been already exported)
+	# +++ export input data (if using mpi.cl it might have been already exported)
 	if (is.null(mpi.cl) || !is.null(dSet.data)) {
 		Xdata.exp(cl, dSet.data, m$is.distance, m$is.sparse, m$normalize)
 	}
@@ -62,9 +59,10 @@ bdm.efc <- function(dSet.data, m, ppx = ppx, iters = 1, lRate = NULL, theta = .0
 		m$ppx <- beta.get(cl, ppx, m$ppx$xppx)
 	}
 	Xbeta.exp(cl, m$ppx$B)
+	# +++ define thread chunks
+	nX <- m$nX
 	# Att!! nnSize refers here to the whole dataset
 	nnSize <- min((m$ppx$ppx *m$ppx$xppx), (nX -1))
-	# +++ define thread chunks
 	clusterExport(cl, c('nX', 'nnSize'), envir = environment())
 	clusterCall(cl, thread.chunk)
 	# +++ compute thread affinity matrices
