@@ -111,10 +111,9 @@ kNP.plot <- function(bdm, par.set = T)
 	# plot R vs log10(K)
 	plot(log10(bdm$kNP$K), bdm$kNP$R, type = 'l', col = 4, xlab = 'log10(K)', ylab = 'Rnx(K)', ylim= c(0.0, 1.0))
 	# title AUC
-	ppx <- dotfrmt(bdm$ppx$ppx /nrow(bdm$ptsne$Y), 3)
 	linAUC <- knformat(bdm$kNP$AUC[1], 4)
 	logAUC <- knformat(bdm$kNP$AUC[2], 4)
-	title(main = paste('ppx ', ppx, ' linAUC ', linAUC, ' logAUC ', logAUC), cex.main = 0.8)
+	title(main = paste('linAUC', linAUC, ', logAUC', logAUC, ', ppx', bdm$ppx$ppx), cex.main = 0.8)
 	#
 	if (par.set) parbdm.def()
 }

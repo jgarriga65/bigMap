@@ -45,9 +45,9 @@ zQ.exp <- function(cl, threads)
 }
 
 
-bdm.efc <- function(dSet.data, m, ppx = ppx, iters = 1, lRate = NULL, theta = .0, exgg = 1, threads = 4, mpi.cl = NULL)
+bdm.efc <- function(dSet.data, m.list, ppx = ppx, iters = 1, lRate = NULL, theta = .0, exgg = 1, threads = 4, mpi.cl = NULL)
 {
-	m.list <- list(m)
+	m <- m.list[[1]]
 	# +++ start cluster
 	cl <- cluster.start(threads, mpi.cl)
 	# +++ export input data (if using mpi.cl it might have been already exported)
@@ -104,7 +104,7 @@ bdm.efc <- function(dSet.data, m, ppx = ppx, iters = 1, lRate = NULL, theta = .0
 	if (is.null(mpi.cl)) cluster.stop(cl)
 	m$ptsne$Y <- Y
 	m$ptsne$efcIt <- iters
-	m.list[[2]] <- m
+	m.list[[(length(m.list) +1)]] <- m
 	return(m.list)
 }
 

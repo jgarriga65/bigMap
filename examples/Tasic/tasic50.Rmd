@@ -24,28 +24,25 @@ library(bigMap)
 
 ```{r, }
 X50 <- as.matrix(read.csv('./tscX50.csv', header = FALSE))
-Lbls <- as.matrix(read.csv('./tscLbls.csv', header = FALSE))
+lbl <- as.matrix(read.csv('./tscLbls.csv', header = FALSE))
 ```
 
 ### Initialize
 
 ```{r, }
 ppx.list <- round(nrow(X50) * c(.001, .005, .01, .05, .10, .20), 0)
-m <- bdm.init(X50, dSet.name = 'Tasic50', ppx = ppx.list, threads = 4, labels = Lbls)
+m <- bdm.init(X50, dSet.name = 'Tasic50', ppx = ppx.list, threads = 4, labels = lbl)
 ```
 
-### ptSNE
+### Run pt-SNE
 
-```{r, }
-load('./tsc50_tht00.RData')
+```{r, eval = F}
+m.list <- bdm.ptsne(X50, m, lRate = NULL, theta = .0, threads = 20, layers = 2)
+save(m.list, file = '~/omics/tasic/bm450/tsc50.RData')
 ```
 
-```{r, }
-str(m.list[[1]]$ptsne[1:6])
-```
-
-```{r, }
-sapply(m.list, function(m) m$Xbeta$ppx)
+```{r, echo = F}
+load('./tsc50.RData')
 ```
 
 ### Output
@@ -55,9 +52,8 @@ nulL <- lapply(m.list, function(m) bdm.cost(m))
 ```
 
 ```{r, echo = FALSE, out.width = '33%', fig.show = 'hold'}
-load('../../tsc50.RData')
+load('./tsc50.RData')
 nulL <- lapply(m.list, function(m) {
-  m$lbls <- tsc50$lbls
   bdm.ptsne.plot(m, ptsne.cex = 0.5, class.pltt = tsc50$pltt)
 })
 ```

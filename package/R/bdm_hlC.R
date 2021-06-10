@@ -49,7 +49,7 @@ bdm.hlCorr <- function(data, bdm, zSampleSize = 1000, threads = 4, mpi.cl = NULL
 	cat('+++ computing hl-Correlation \n')
 	clusterExport(cl, c('zSampleSize'), envir=environment())
 	t <- system.time({
-		bdm$hlCorr <- unlist(clusterCall(cl, thread.hlCorr))
+		bdm$hlC <- unlist(clusterCall(cl, thread.hlCorr))
 	})
 	print(summary(bdm$hlCorr))
 	print(t)
