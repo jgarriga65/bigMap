@@ -34,10 +34,10 @@ pltt.heat <- function(n, alpha = 1)
 # +++ graph plot
 # ------------------------------------------------------------------------------
 
-graph.plot <- function(g, edges, cex = 0.8, lwd = 0.2, lvls = 8, bg = "#FFFFFF")
+graph.plot <- function(g, edges, cex = 0.8, lwd = 0.2, lvls = 8, bg = "#FFFFFF", title = NULL, mar = c(0.5, 0.5, 2.0, 0.5))
 {
 	Y <- g$ptsne$Y[, 1:2]
-	par(oma = c(0.1, 0.1, 0.1, 0.1), mar = c(0, 0, 0, 0), bg = bg)
+	par(oma = c(0.1, 0.1, 0.1, 0.1), mar = mar, bg = bg)
 	plot(Y, xlab = '', ylab = '', xaxt = 'n', yaxt = 'n', bty = 'n', col='#888888', cex = cex, pch = 20, asp = 1.0)
 	e.lens <- sqrt(apply(edges, 1, function(e) sum((Y[e[1], ] - Y[e[2], ])**2)))
 	e.qntl <- quantile(e.lens, seq(0, 1, length.out = lvls+1))
@@ -52,4 +52,5 @@ graph.plot <- function(g, edges, cex = 0.8, lwd = 0.2, lvls = 8, bg = "#FFFFFF")
 		j <- edges[e, 2]
 		lines(x = Y[c(i, j), 1], y = Y[c(i, j), 2], lwd=lwd, col=pltt[e.lbls[e]])
 	})
+	if (!is.null(title)) mtext(title, cex = 1.2, side = 3, line = 0.3)
 }

@@ -82,7 +82,6 @@ s2nr.kList <- function(C, L, X, Z, G, P)
 	K <- lapply(unique(C), function(k)
 	{
 		k.data <- which(L == k)
-		# k.list <- list(k = k, fthr = s2nr.kfthr(C, Z, G, P, k), N = length(k.data), M = rep(0, ncol(X)), V = max.Var)
 		k.list <- list(k = k, fthr = s2nr.kfthr(C, Z, G, P, k), N = length(k.data))
 		if (length(k.data) > 1) {
 			k.list$M <- apply(X[k.data, ], 2, mean)
@@ -91,7 +90,12 @@ s2nr.kList <- function(C, L, X, Z, G, P)
 			k.list$M <- X[k.data, ]
 			k.list$V <- rep(0, ncol(X))
 		} else {
-			print(paste('+++ error', k, length(k.data)))
+			# Att.!!!
+			# there may exist clusters with no data !!!
+			# the addition of kernel tails in areas where there is no data may give rise to a little peak
+			# afterwards bdm.labels() finds no data points to assign the ids of thouse clusters
+			k.list$M <- rep(0, ncol(X))
+			k.list$V <- rep(0, ncol(X))
 		}
 		return(k.list)
 	})

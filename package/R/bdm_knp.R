@@ -71,8 +71,9 @@ kNP.get <- function(cl, nY, k.max, sampling)
 {
 	#. k-ary neighborhoods
 	K <- unique(ceiling(2**(seq(1, log2(k.max -4), length.out = 100))))
+	# clusterExport(cl, c('K', 'sampling'), envir = environment()) ?? seems to not work ??
+	clusterExport(cl, c('k.max', 'sampling'), envir = environment())
 	#. k-ary Q
-	clusterExport(cl, c('K', 'sampling'), envir = environment())
 	Q.list <- clusterCall(cl, thread.kNP)
 	Q <- sapply(Q.list[2: length(Q.list)], function(chnk.Q) apply(chnk.Q, 2, sum))
 	n <- sum(sapply(Q.list[2: length(Q.list)], function(chnk.Q) nrow(chnk.Q)))
@@ -86,6 +87,8 @@ kNP.get <- function(cl, nY, k.max, sampling)
 thread.kNP <- function()
 {
 	if (thread.rank != 0) {
+		#. k-ary neighborhoods
+		K <- unique(ceiling(2**(seq(1, log2(k.max -4), length.out = 100))))
 		z_kNP(thread.rank, threads, Xbm@address, Ybm@address, is.distance, is.sparse, K, sampling)
 	}
 }

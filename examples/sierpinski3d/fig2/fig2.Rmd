@@ -1,5 +1,5 @@
 ---
-title: "Sierpinski3d. Speed/Accuracy trade-off"
+title: "Sierpinski3d. Figure 2"
 author: |-
   J.Garriga; F.Bartumeus\
   ICREA Movement Ecology Laboratory (CEAB-CSIC)\
@@ -21,6 +21,20 @@ knitr::opts_chunk$set(echo = TRUE)
 library(bigMap)
 ```
 
+Run pt-SNE on Sierpinski-3d with perplexity 2030 (99% of the data set size) and a decreasing range of thread-ratio. We show:
+
+  + loss of accuracy with decreasing thread-ratio;
+  + improvement of the final embedding by means of a final compression of the embedding (EFC);
+  + using different perplexities in EFC enhances the structure at the corresponding scale while preserving the captured global structure;
+
+
+```{r, out.width = '33%', fig.show = 'hold'}
+# source aux. stuff (graph plot function)
+source('../graphs.R')
+# load edge matrix
+E <- as.matrix(read.csv('../sierpinski3d.edg', sep = '', header = F))
+```
+
 ### Load data
 
 ```{r, }
@@ -31,7 +45,6 @@ D <- as.matrix(read.csv('../sierpinski3d.mtx', sep = '', header = F))
 
 ```{r, eval = F, results = F}
 g <- bdm.init(D, dSet.name = 'S3D', is.distance = T, ppx = 2030, threads = 4)
-str(g)
 ```
 
 ### Run ptSNE (perplexity = 2030, decreasing thread-ratio)
@@ -47,29 +60,24 @@ g6 <- bdm.ptsne(D, g, threads = 8, layers = 2)
 
 ```{r, eval = F}
 g.list <- list(g1, g2, g3, g4, g5, g6)
-save(g.list, file = './fig2.RData')
+save(g.list, file = './s3d_2030.RData')
 ```
 
 ```{r, echo = F}
-load('./fig2.RData')
+load('./s3d_2030.RData')
 ```
 
 ### Output
 
 ```{r, out.width = '33%', fig.show = 'hold'}
-# source graph plot
-source('../graphs.R')
-# load edge matrix
-E <- as.matrix(read.csv('../sierpinski3d.edg', sep = '', header = F))
-# plot
 nulL <- lapply(g.list, function(g) graph.plot(g, E))
 ```
 
 ### hl-Correlation
 
 ```{r, eval = F}
-g.list <- lapply(g.list, function(g) bdm.hlCorr(D, g, zSampleSize = 1000, threads = 4))
-save(g.list, file = './fig2.RData')
+g.list <- lapply(g.list, function(g) bdm.hlCorr(D, g, threads = 4))
+save(g.list, file = './s3d_2030.RData')
 ```
 
 ```{r, }
@@ -81,11 +89,11 @@ knitr::kable(hlTable, caption = 'hl-Correlation by thread-ratio') %>%
   kable_styling(full_width = F)
 ```
 
-### Kary-neighborhood preservation
+### k-ary neighborhood preservation
 
 ```{r, eval = F}
-g.list <- lapply(g.list, function(g) bdm.knp(D, g, k.max = NULL, sampling = 0.9, threads = 4))
-save(g.list, file = './fig2.RData')
+g.list <- lapply(g.list, function(g) bdm.knp(D, g, threads = 4))
+save(g.list, file = './s3d_2030.RData')
 ```
 
 ```{r, }
@@ -98,9 +106,98 @@ bdm.knp.plot(g.list, ppxfrmt = 0)
 rTimes <- sapply(g.list, function(g) c(g$ppx$t[3], g$t$epoch, g$t$ptsne[3], sum(c(g$ppx$t[3], g$t$ptsne[3]))))
 rTimes <- round(rTimes, 2)
 threadRatio <- sapply(g.list, function(g) g$ptsne$layers /g$ptsne$threads)
-colnames(hlTable) <- round(threadRatio, 2)
+colnames(rTimes) <- round(threadRatio, 2)
 rownames(rTimes) <- c('betas', 'epoch', 'ptSNE', 'total')
 knitr::kable(rTimes, caption = 'Computation times (s) by thread-ratio') %>%
+  kable_styling(full_width = F)
+```
+
+*Run on: Intel(R) Xeon(R) CPU E31225 @ 3.10GHz, 4 cores, 16GB RAM.*
+
+### Embedding final compression (EFC)
+
+```{r, eval = F}
+# take the embedding with lowest thread-ratio
+g.2030c <- g.list[6:6]
+# compress with ppx = 1845 (0.90)
+g.2030c <- bdm.efc(D, g.2030c, ppx = 1845, iters = 50, threads = 4)
+# compress with ppx = 1025 (0.50)
+g.2030c <- bdm.efc(D, g.2030c, ppx = 1025, iters = 50, threads = 4)
+# compress with ppx = 205 (0.10)
+g.2030c <- bdm.efc(D, g.2030c, ppx = 205, iters = 50, threads = 4)
+# compress with ppx = 102 (0.05)
+g.2030c <- bdm.efc(D, g.2030c, ppx = 102, iters = 50, threads = 4)
+# compress with ppx = 20 (0.01)
+g.2030c <- bdm.efc(D, g.2030c, ppx = 20, iters = 50, threads = 4)
+save(g.2030c, file = './s3d_2030c.RData')
+```
+
+```{r, echo = F}
+load('./s3d_2030c.RData')
+```
+
+### EFC output vs. output from Fig.1 (with thread-ratio=1.0)
+
+```{r, }
+# load embeddings with thread-ratio = 1.0 (from Fig.1)
+load('../pt-SNE/glist.RData')
+g.threadRatio1 <- g.list[c(13, 11, 7, 3, 2, 1)]
+```
+
+```{r, out.width = '45%', fig.show = 'hold'}
+g <- g.threadRatio1[[1]]
+graph.plot(g, E, title = 'ppx=2030, thread-ratio=1.0')
+g <- g.2030c[[1]]
+graph.plot(g, E, title = 'ppx=2030, thread-ratio=0.25')
+```
+
+```{r, out.width = '45%', fig.show = 'hold'}
+nulL <- lapply(2:6, function(i) {
+  g <- g.threadRatio1[[i]]
+  graph.plot(g, E, title = paste('ppx=', g$ppx$ppx, ', thread-ratio=1.0', sep = ''))
+  g <- g.2030c[[i]]
+  graph.plot(g, E, title = paste('ppx=2030, thread-ratio=0.25, +efc.', g$ppx$ppx, sep = ''))
+})
+```
+
+### EFC hl-Correlation
+
+```{r, eval = F}
+g.2030c <- lapply(g.2030c, function(g) bdm.hlCorr(D, g, zSampleSize = 1000, threads = 4))
+```
+
+```{r, }
+hlTable <- sapply(g.2030c, function(g) summary(g$hlC))
+hlTable <- t(round(hlTable, 4))
+efc.ppx <- paste('efc.', sapply(g.2030c, function(g) g$ppx$ppx), sep = '')
+rownames(hlTable) <- efc.ppx
+knitr::kable(hlTable, caption = 'hl-Correlation by EFC-perplexity') %>%
+  kable_styling(full_width = F)
+```
+
+### EFC k-ary neighborhood preservation
+
+```{r, eval = F}
+g.2030c <- lapply(g.2030c, function(g) bdm.knp(D, g, k.max = NULL, sampling = 0.9, threads = 4))
+```
+
+```{r, }
+bdm.knp.plot(g.2030c, ppxfrmt = 0)
+```
+
+### Running Times
+
+```{r, echo = F}
+# trick ;)
+g.2030c[[1]]$t$efc <- c(0, 0, 0)
+```
+
+```{r, }
+rTimes <- sapply(g.2030c, function(g) c(g$ppx$t[3], g$t$epoch, g$t$ptsne[3], g$t$efc[3], sum(c(g$ppx$t[3], g$t$ptsne[3], g$t$efc[3]))))
+rTimes <- round(rTimes, 2)
+colnames(rTimes) <- sapply(g.2030c, function(g) g$ppx$ppx)
+rownames(rTimes) <- c('betas', 'epoch', 'ptSNE', 'EFC', 'total')
+knitr::kable(rTimes, caption = 'Computation times (s) by EFC-perplexity') %>%
   kable_styling(full_width = F)
 ```
 

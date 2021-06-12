@@ -45,7 +45,7 @@ zQ.exp <- function(cl, threads)
 }
 
 
-bdm.efc <- function(dSet.data, m.list, ppx = ppx, iters = 1, lRate = NULL, theta = .0, exgg = 1, threads = 4, mpi.cl = NULL)
+bdm.efc <- function(dSet.data, m.list, ppx = ppx, iters = 100, lRate = NULL, theta = .0, exgg = 1, threads = 4, mpi.cl = NULL)
 {
 	m <- m.list[[1]]
 	# +++ start cluster
@@ -55,7 +55,10 @@ bdm.efc <- function(dSet.data, m.list, ppx = ppx, iters = 1, lRate = NULL, theta
 		Xdata.exp(cl, dSet.data, m$is.distance, m$is.sparse, m$normalize)
 	}
 	# +++ compute/export betas
-	if (ppx != m$ppx$ppx) {
+	if (class(ppx) == 'list') {
+		m$ppx <- ppx
+	}
+	else if (ppx != m$ppx$ppx) {
 		m$ppx <- beta.get(cl, ppx, m$ppx$xppx)
 	}
 	Xbeta.exp(cl, m$ppx$B)

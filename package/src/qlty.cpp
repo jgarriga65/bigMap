@@ -325,7 +325,7 @@ arma::Mat<int> z_kNP(int thread_rank, int threads, SEXP sexpX, SEXP sexpY, bool 
 	for (int q = 0; q < chunkSize; q++) {
 		if (chunkRnd[q] < sampling) chunkIdx.push_back(chunkBeg +q);
 	}
-	// output data (chunk of Betas and theta-quantiles)
+	// output data
 	arma::Mat<int> chunk_Q(chunkIdx.size(), K_size);
 	//
 	int k = 0;

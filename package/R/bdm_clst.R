@@ -40,6 +40,11 @@ bdm.mpi.start <- function(threads)
 	return(cl)
 }
 
+bdm.mpi.stop <- function(cl)
+{
+	if (!is.null(cl)) stopCluster(cl)
+}
+
 cluster.start <- function(threads, mpi.cl = NULL, verbose = T)
 {
 	if (verbose) cat('+++ starting ', threads, ' threads \n', sep = '')

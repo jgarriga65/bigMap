@@ -51,7 +51,7 @@ bdm.hlCorr <- function(data, bdm, zSampleSize = 1000, threads = 4, mpi.cl = NULL
 	t <- system.time({
 		bdm$hlC <- unlist(clusterCall(cl, thread.hlCorr))
 	})
-	print(summary(bdm$hlCorr))
+	print(summary(bdm$hlC))
 	print(t)
 	bdm$t$hlC <- t
 	cluster.stop(cl)
