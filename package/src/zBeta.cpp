@@ -16,7 +16,7 @@
 #include <bigmemory/MatrixAccessor.hpp>
 #include <algorithm>
 
-#include "mydist.h"
+#include "sqdist.h"
 #include "lambertW.h"
 
 // using namespace arma;
@@ -35,7 +35,7 @@ double entropy(std::vector<double> Li, double Bi, double &Zi, int nnQ)
 	double Hi = .0;
 	// // entropy (up to 32.0/Bi)
 	// double maxL = 32.0 /Bi;
-	// for (size_t j = 0; j < Li.size(); j++) {
+	// for (unsigned int j = 0; j < Li.size(); j++) {
 	// 	if (Li[j] <= maxL) {
 	// 		double Kij = std::exp(-Bi *Li[j]);
 	// 		Zi += Kij;
@@ -43,7 +43,7 @@ double entropy(std::vector<double> Li, double Bi, double &Zi, int nnQ)
 	// 	}
 	// }
 	// entropy (up to nnQ)
-	for (size_t j = 0; j < nnQ; j++) {
+	for (unsigned int j = 0; j < nnQ; j++) {
 		double Kij = std::exp(-Bi *Li[j]);
 		Zi += Kij;
 		Hi += Li[j] *Kij;
@@ -63,16 +63,16 @@ double entropy(std::vector<double> Li, double Bi, double &Zi, int nnQ)
 
 // compute chunk of Betas
 // [[Rcpp::export]]
-Rcpp::NumericMatrix zBeta(size_t thread_rank, size_t threads, SEXP sexpX, bool is_distance, bool is_sparse, size_t ppx, double xppx)
+Rcpp::NumericMatrix zBeta(unsigned int thread_rank, unsigned int threads, SEXP sexpX, bool is_distance, bool is_sparse, unsigned int ppx, double xppx)
 {
 	// input data
 	sqDist* sqDistX = new sqDist(sexpX);
 	// get chunk breaks
 	std::vector<int> breaks (threads +1, 0);
-	for (size_t b = 0; b < threads; b++) breaks[b] = (int) b *(sqDistX ->nX +1.0) /threads;
+	for (unsigned int b = 0; b < threads; b++) breaks[b] = (int) b *(sqDistX ->nX +1.0) /threads;
 	breaks[threads] = sqDistX ->nX;
 	// output data (chunk of Betas and theta-quantiles)
-	size_t chunk_size = breaks[thread_rank] - breaks[thread_rank -1];
+	unsigned int chunk_size = breaks[thread_rank] - breaks[thread_rank -1];
 	Rcpp::NumericMatrix Beta(4, chunk_size);
 	// parameters
 	double logppx = std::log(ppx);
@@ -81,9 +81,9 @@ Rcpp::NumericMatrix zBeta(size_t thread_rank, size_t threads, SEXP sexpX, bool i
 	double stdppx = std::pow((std::log(std::sqrt(6.28318530718)) -logppx), 2.0);
 	double sq3ppx = std::pow(3.0 *ppx, 2.0);
 	//
-	for (size_t i = breaks[thread_rank -1]; i < breaks[thread_rank]; i++) {
+	for (unsigned int i = breaks[thread_rank -1]; i < breaks[thread_rank]; i++) {
 		// chunk-index
-		size_t l = i -breaks[thread_rank -1];
+		unsigned int l = i -breaks[thread_rank -1];
 		// squared distances
 		std::vector<double> Li(sqDistX ->nX);
 		if (is_sparse) {
@@ -101,7 +101,7 @@ Rcpp::NumericMatrix zBeta(size_t thread_rank, size_t threads, SEXP sexpX, bool i
 		// compute Beta
 		double Bi = 1.0, minBeta = 0, maxBeta = DBL_MAX;
 		double Zi;
-		for (size_t iter = 0; iter < 100; iter++) {
+		for (unsigned int iter = 0; iter < 100; iter++) {
 			if (Bi > nnQBeta) {
 				Bi = -1.0 /(2.0 *Li[nnQ]) *lambertWm1_CS(-(6.28318530718 *Li[nnQ]) /sq3ppx);
 				// Bi = nnQBeta;

@@ -23,13 +23,13 @@
 
 #include <math.h>
 #include <float.h>
-#include "mydist.h"
+#include "sqdist.h"
 #include "affmtx.h"
 
 using namespace Rcpp;
 
 // affMtx constructor
-affMtx::affMtx(SEXP sexpX, SEXP sexpB, int* zIdx, size_t z, size_t nnSize, double latEx) : zIdx(zIdx), z(z), nnSize(nnSize), latEx(latEx)
+affMtx::affMtx(SEXP sexpX, SEXP sexpB, int* zIdx, unsigned int z, unsigned int nnSize, double latEx) : zIdx(zIdx), z(z), nnSize(nnSize), latEx(latEx)
 {
 
 	// Att!! X and B transposed
@@ -49,12 +49,15 @@ affMtx::affMtx(SEXP sexpX, SEXP sexpB, int* zIdx, size_t z, size_t nnSize, doubl
 	// thread fraction of affinities
 	this ->zP = .0;
 
+	// clean
+	bigX = NULL;
+	bigB = NULL;
 }
 
 // local exaggeration factor
 void affMtx::exgg(double* E)
 {
-	for (size_t i = 0; i < z; i++) E[i] = B[zIdx[i] *4 +3];
+	for (unsigned int i = 0; i < z; i++) E[i] = B[zIdx[i] *4 +3];
 }
 
 // transform input similarities into probabilities
@@ -62,17 +65,17 @@ void affMtx::exgg(double* E)
 void affMtx::X2P(double* P, int* W)
 {
 	std::vector<int> nn(z, 0);
-	for (size_t i = 0, ij = 0; i < z; i++) {
-		size_t zi = zIdx[i];
+	for (unsigned int i = 0, ij = 0; i < z; i++) {
+		unsigned int zi = zIdx[i];
 		double Xi[mX];
-		for(size_t v = 0; v < mX; v++) Xi[v] = X[zi *mX +v];
+		for(unsigned int v = 0; v < mX; v++) Xi[v] = X[zi *mX +v];
 		double Bi = B[zi *4 +0];
 		double Zi = B[zi *4 +1];
 		double Li = B[zi *4 +2];
-		for (size_t j = i +1; j < z; j++, ij++) {
-			size_t zj = zIdx[j];
+		for (unsigned int j = i +1; j < z; j++, ij++) {
+			unsigned int zj = zIdx[j];
 			double Lij = .0;
-			for(size_t v = 0; v < mX; v++) Lij += pow(Xi[v] -X[zj *mX +v], 2);
+			for(unsigned int v = 0; v < mX; v++) Lij += pow(Xi[v] -X[zj *mX +v], 2);
 			double Bj = B[zj *4 +0];
 			double Zj = B[zj *4 +1];
 			double Lj = B[zj *4 +2];
@@ -97,13 +100,13 @@ void affMtx::X2P(double* P, int* W)
 void affMtx::D2P(double* P, int* W)
 {
 	std::vector<int> nn(z, 0);
-	for (size_t i = 0, ij = 0; i < z; i++) {
-		size_t zi = zIdx[i];
+	for (unsigned int i = 0, ij = 0; i < z; i++) {
+		unsigned int zi = zIdx[i];
 		double Bi = B[zi *4 +0];
 		double Zi = B[zi *4 +1];
 		double Li = B[zi *4 +2];
-		for (size_t j = i +1; j < z; j++, ij++) {
-			size_t zj = zIdx[j];
+		for (unsigned int j = i +1; j < z; j++, ij++) {
+			unsigned int zj = zIdx[j];
 			double Lij = std::pow(X[zi *mX +zj], 2);
 			double Bj = B[zj *4 +0];
 			double Zj = B[zj *4 +1];
@@ -129,17 +132,17 @@ void affMtx::D2P(double* P, int* W)
 void affMtx::S2P(double* P, int* W)
 {
 	std::vector<int> nn(z, 0);
-	for (size_t i = 0, ij = 0; i < z; i++) {
-		size_t zi = zIdx[i];
+	for (unsigned int i = 0, ij = 0; i < z; i++) {
+		unsigned int zi = zIdx[i];
 		double Xi[mX];
-		for(size_t v = 0; v < mX; v++) Xi[v] = X[zi *mX +v];
+		for(unsigned int v = 0; v < mX; v++) Xi[v] = X[zi *mX +v];
 		double Bi = B[zi *4 +0];
 		double Zi = B[zi *4 +1];
 		double Li = B[zi *4 +2];
-		for (size_t j = i +1; j < z; j++, ij++) {
-			size_t zj = zIdx[j];
+		for (unsigned int j = i +1; j < z; j++, ij++) {
+			unsigned int zj = zIdx[j];
 			double Xj[mX];
-			for(size_t v = 0; v < mX; v++) Xj[v] = X[zj *mX +v];
+			for(unsigned int v = 0; v < mX; v++) Xj[v] = X[zj *mX +v];
 			double Lij = spDist(mX, Xi, Xj);
 			double Bj = B[zj *4 +0];
 			double Zj = B[zj *4 +1];
@@ -164,22 +167,22 @@ void affMtx::S2P(double* P, int* W)
 
 // transform input similarities into probabilities
 // FROM INPUT-DATA
-void affMtx::efc_X2P(size_t z_ini, size_t z_end, double* P, int* W)
+void affMtx::efc_X2P(unsigned int z_ini, unsigned int z_end, double* P, int* W)
 {
-	for (size_t zi = z_ini, i = 0; zi < z_end; zi++, i++) {
+	for (unsigned int zi = z_ini, i = 0; zi < z_end; zi++, i++) {
 		double Xi[mX];
-		for(size_t v = 0; v < mX; v++) Xi[v] = X[zi *mX +v];
+		for(unsigned int v = 0; v < mX; v++) Xi[v] = X[zi *mX +v];
 		double Bi = B[zi *4 +0];
 		double Zi = B[zi *4 +1];
 		double Li = B[zi *4 +2];
-		for (size_t zj = 0, ni = 0; ((zj < nX) && (ni < nnSize)); zj++) {
+		for (unsigned int zj = 0, ni = 0; ((zj < nX) && (ni < nnSize)); zj++) {
 			if (zj != zi) {
 				double Lij = .0;
-				for(size_t v = 0; v < mX; v++) Lij += pow(Xi[v] -X[zj *mX +v], 2);
+				for(unsigned int v = 0; v < mX; v++) Lij += pow(Xi[v] -X[zj *mX +v], 2);
 				if (Lij <= Li) {
 					double Bj = B[zj *4 +0];
 					double Zj = B[zj *4 +1];
-					size_t ij = i *nnSize +ni;
+					unsigned int ij = i *nnSize +ni;
 					P[ij] += std::exp(-Bi *Lij) /Zi;
 					P[ij] += std::exp(-Bj *Lij) /Zj;
 					zP += P[ij];
@@ -195,19 +198,19 @@ void affMtx::efc_X2P(size_t z_ini, size_t z_end, double* P, int* W)
 
 // transform input similarities into probabilities
 // FROM FULL-DISTANCE-MATRIX
-void affMtx::efc_D2P(size_t z_ini, size_t z_end, double* P, int* W)
+void affMtx::efc_D2P(unsigned int z_ini, unsigned int z_end, double* P, int* W)
 {
-	for (size_t zi = z_ini, i = 0; zi < z_end; zi++, i++) {
+	for (unsigned int zi = z_ini, i = 0; zi < z_end; zi++, i++) {
 		double Bi = B[zi *4 +0];
 		double Zi = B[zi *4 +1];
 		double Li = B[zi *4 +2];
-		for (size_t zj = 0, ni = 0; ((zj < nX) && (ni < nnSize)); zj++) {
+		for (unsigned int zj = 0, ni = 0; ((zj < nX) && (ni < nnSize)); zj++) {
 			if (zj != zi) {
 				double Lij = std::pow(X[zi *mX +zj], 2);
 				if (Lij <= Li) {
 					double Bj = B[zj *4 +0];
 					double Zj = B[zj *4 +1];
-					size_t ij = i *nnSize +ni;
+					unsigned int ij = i *nnSize +ni;
 					P[ij] += std::exp(-Bi *Lij) /Zi;
 					P[ij] += std::exp(-Bj *Lij) /Zj;
 					zP += P[ij];
@@ -221,22 +224,22 @@ void affMtx::efc_D2P(size_t z_ini, size_t z_end, double* P, int* W)
 
 // transform input euclidean-distances into probabilities
 // FROM SPARSE-MATRIX DATA
-void affMtx::efc_S2P(size_t z_ini, size_t z_end, double* P, int* W)
+void affMtx::efc_S2P(unsigned int z_ini, unsigned int z_end, double* P, int* W)
 {
-	for (size_t zi = z_ini, i = 0; zi < z_end; zi++, i++) {
+	for (unsigned int zi = z_ini, i = 0; zi < z_end; zi++, i++) {
 		double Xi[mX];
-		for(size_t v = 0; v < mX; v++) Xi[v] = X[zi *mX +v];
+		for(unsigned int v = 0; v < mX; v++) Xi[v] = X[zi *mX +v];
 		double Bi = B[zi *4 +0];
 		double Zi = B[zi *4 +1];
 		double Li = B[zi *4 +2];
-		for (size_t zj = 0, ni = 0; ((zj < nX) && (ni < nnSize)); zj++) {
+		for (unsigned int zj = 0, ni = 0; ((zj < nX) && (ni < nnSize)); zj++) {
 			double Xj[mX];
-			for(size_t v = 0; v < mX; v++) Xj[v] = X[zj *mX +v];
+			for(unsigned int v = 0; v < mX; v++) Xj[v] = X[zj *mX +v];
 			double Lij = spDist(mX, Xi, Xj);
 			if (Lij <= Li) {
 				double Bj = B[zj *4 +0];
 				double Zj = B[zj *4 +1];
-				size_t ij = i *nnSize +ni;
+				unsigned int ij = i *nnSize +ni;
 				P[ij] += std::exp(-Bi *Lij) /Zi;
 				P[ij] += std::exp(-Bj *Lij) /Zj;
 				zP += P[ij];

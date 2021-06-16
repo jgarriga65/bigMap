@@ -13,7 +13,7 @@
 #ifndef AFFMTX_H
 #define AFFMTX_H
 
-static inline size_t ijIdx(size_t z, size_t i, size_t j)
+static inline unsigned int ijIdx(unsigned int z, unsigned int i, unsigned int j)
 {
 	return (i < j) ? (z *i) -(i +1) *(i +2) /2 +j : (z *j) -(j +1) *(j +2) /2 +i ;
 }
@@ -21,15 +21,24 @@ static inline size_t ijIdx(size_t z, size_t i, size_t j)
 class affMtx
 {
 public:
+
 	// t-SNE input/ouput matrix size
-	size_t z, w, nX, mX, nnSize;
+	unsigned int z, w, nX, mX, nnSize;
 	double latEx;
 	int* zIdx;
 	double* X;
 	double* B;
 	double zP;
+
 	// constructor
-	affMtx(SEXP sexpX, SEXP sexpB, int* zIdx, size_t z, size_t nnSize, double latEx);
+	affMtx(SEXP sexpX, SEXP sexpB, int* zIdx, unsigned int z, unsigned int nnSize, double latEx);
+	// destructor
+	~affMtx() {
+		zIdx = NULL;
+		B = NULL;
+		X = NULL;
+	}
+
 	// exaggeration factor
 	void exgg(double* E);
 	// transform input similarities into unnormalized probabilities from INPUT-DATA
@@ -39,9 +48,10 @@ public:
 	// transform input similarities into unnormalized probabilities from SPARSE-DATA
 	void S2P(double* P, int* W);
 	// versions for enbedding final compression
-	void efc_X2P(size_t z_ini, size_t z_end, double* P, int* W);
-	void efc_D2P(size_t z_ini, size_t z_end, double* P, int* W);
-	void efc_S2P(size_t z_ini, size_t z_end, double* P, int* W);
+	void efc_X2P(unsigned int z_ini, unsigned int z_end, double* P, int* W);
+	void efc_D2P(unsigned int z_ini, unsigned int z_end, double* P, int* W);
+	void efc_S2P(unsigned int z_ini, unsigned int z_end, double* P, int* W);
+
 };
 
 #endif

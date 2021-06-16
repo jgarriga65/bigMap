@@ -45,6 +45,11 @@ bdm.mpi.stop <- function(cl)
 	if (!is.null(cl)) stopCluster(cl)
 }
 
+bdm.mpi.export <- function(cl, X, is.distance = F, is.sparse = F, normalize = T)
+{
+	Xdata.exp(cl, X, is.distance, is.sparse, normalize)
+}
+
 cluster.start <- function(threads, mpi.cl = NULL, verbose = T)
 {
 	if (verbose) cat('+++ starting ', threads, ' threads \n', sep = '')

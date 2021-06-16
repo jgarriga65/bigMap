@@ -49,7 +49,7 @@ bdm.knp <- function(data, bdm, k.max = NULL, sampling = 0.9, threads = 4, mpi.cl
 	}
 	#. output data
 	cat('+++ exporting output data \n')
-	Ydata.exp(cl, bdm$ptsne$Y[, 1:2])
+	Ydata.exp(cl, t(bdm$ptsne$Y[, 1:2]))
 	cat('+++ computing k-ary neighbourhood preservation \n')
 	nY <- nrow(bdm$ptsne$Y)
 	if (is.null(k.max)) k.max <- nY -1
@@ -59,7 +59,7 @@ bdm.knp <- function(data, bdm, k.max = NULL, sampling = 0.9, threads = 4, mpi.cl
 	cat('+++ linAUC', bdm$kNP$AUC[1], ', logAUC', bdm$kNP$AUC[2], '\n', sep = ' ')
 	print(t)
 	bdm$t$kNP <- t
-	stopCluster(cl)
+	cluster.stop(cl)
 	return(bdm)
 }
 
@@ -128,7 +128,7 @@ kNP.plot.list <- function(m.list, ppxfrmt = 1, log.k = T, par.set = T)
 		layout(matrix(c(1, 2, 3, 3), nrow = 2), widths = c(0.7, 0.3))
 	}
 	# palette
-	pltt <- rainbow(length(m.list))
+	pltt <- pltt.class(length(m.list))
 	# plot R vs K
 	K <- m.list[[1]]$kNP$K
 	plot(K, rep(0, length(K)), type = 'n', xlab = 'K', ylab = 'Rnx(K)', ylim= c(0.0, 1.0))

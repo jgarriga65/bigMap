@@ -45,7 +45,7 @@ bdm.hlCorr <- function(data, bdm, zSampleSize = 1000, threads = 4, mpi.cl = NULL
 		Xdata.exp(cl, data, bdm$is.distance, bdm$is.sparse, bdm$normalize)
 	}
 	cat('+++ exporting output data \n')
-	Ydata.exp(cl, t(bdm$ptsne$Y))
+	Ydata.exp(cl, t(bdm$ptsne$Y[, 1:2]))
 	cat('+++ computing hl-Correlation \n')
 	clusterExport(cl, c('zSampleSize'), envir=environment())
 	t <- system.time({

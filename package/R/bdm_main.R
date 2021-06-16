@@ -293,7 +293,7 @@ bdm.ptsne <- function(data, bdm, lRate = NULL, theta = 0.0, alpha = 0.5, Y.init 
 	bdm <- ptsne.get(cl, bdm, info)
 	if (length(bdm) == 1) bdm <- bdm[[1]]
 	# stop cluster
-	stopCluster(cl)
+	cluster.stop(cl)
 	return(bdm)
 }
 
@@ -327,7 +327,7 @@ bdm.restart <- function(data, bdm, epochs = NULL, iters = NULL, info = 0, thread
 	bdm$ptsne$size <- c(size, bdm$ptsne$size)
 	if (info == 2) bdm$progress <- c(progress, bdm$progress)
 	# +++ stop cluster
-	stopCluster(cl)
+	cluster.stop(cl)
 	return(bdm)
 }
 
@@ -384,7 +384,7 @@ bdm.pakde <- function(bdm, ppx = 100, g = 200, g.exp = 3, threads = 2, mpi.cl = 
 	}
 	else cat('+++ Error: up-stream step bdm.ptsne(layer = ', layer, ') not found ! \n', sep = '')
 	# stop cluster
-	stopCluster(cl)
+	cluster.stop(cl)
 	return(bdm)
 }
 

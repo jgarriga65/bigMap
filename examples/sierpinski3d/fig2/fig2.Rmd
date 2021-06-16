@@ -4,7 +4,7 @@ author: |-
   J.Garriga; F.Bartumeus\
   ICREA Movement Ecology Laboratory (CEAB-CSIC)\
   jgarriga@ceab.csic.es
-date: "Version 4.5.0, `r format(Sys.Date(), '%b %Y')`"
+date: "BigMap_4.5.0, `r format(Sys.Date(), '%b %Y')`"
 output: html_document
 ---
 
@@ -23,8 +23,9 @@ library(bigMap)
 
 Run pt-SNE on Sierpinski-3d with perplexity 2030 (99% of the data set size) and a decreasing range of thread-ratio. We show:
 
-  + loss of accuracy with decreasing thread-ratio;
-  + improvement of the final embedding by means of a final compression of the embedding (EFC);
+  + loss of local structure accuracy with decreasing thread-ratio;
+  + decrease in running time (increasing speed);
+  + improvement of the final embedding by means of a final compression (EFC);
   + using different perplexities in EFC enhances the structure at the corresponding scale while preserving the captured global structure;
 
 
@@ -69,11 +70,15 @@ load('./s3d_2030.RData')
 
 ### Output
 
+Note that the global structure is more or less preserved (we are using a very high perplexity) but the local structure gets worst as the thread-ratio is decreased.
+
 ```{r, out.width = '33%', fig.show = 'hold'}
 nulL <- lapply(g.list, function(g) graph.plot(g, E))
 ```
 
 ### hl-Correlation
+
+In terms of HL-correlation the loss in structure (on average) is minimal.
 
 ```{r, eval = F}
 g.list <- lapply(g.list, function(g) bdm.hlCorr(D, g, threads = 4))
@@ -91,6 +96,8 @@ knitr::kable(hlTable, caption = 'hl-Correlation by thread-ratio') %>%
 
 ### k-ary neighborhood preservation
 
+In terms of kNP, the global structure (linAUC) is notably preserved (with the exception of g5 with thread-ratio = 0.33, blue line) but the loss in local structre (logAUC) is clearly perceptible.
+
 ```{r, eval = F}
 g.list <- lapply(g.list, function(g) bdm.knp(D, g, threads = 4))
 save(g.list, file = './s3d_2030.RData')
@@ -101,6 +108,8 @@ bdm.knp.plot(g.list, ppxfrmt = 0)
 ```
 
 ### Running Times
+
+Note the correlation between decreasing thread-ratio and decreasing running time.
 
 ```{r, }
 rTimes <- sapply(g.list, function(g) c(g$ppx$t[3], g$t$epoch, g$t$ptsne[3], sum(c(g$ppx$t[3], g$t$ptsne[3]))))
@@ -115,6 +124,8 @@ knitr::kable(rTimes, caption = 'Computation times (s) by thread-ratio') %>%
 *Run on: Intel(R) Xeon(R) CPU E31225 @ 3.10GHz, 4 cores, 16GB RAM.*
 
 ### Embedding final compression (EFC)
+
+Let's take g6 (perplexity 2030 and lowest thread-ratio=0.25) and apply EFC with different compression perplexities.
 
 ```{r, eval = F}
 # take the embedding with lowest thread-ratio
@@ -151,6 +162,8 @@ g <- g.2030c[[1]]
 graph.plot(g, E, title = 'ppx=2030, thread-ratio=0.25')
 ```
 
+Note that decreasing EFC perplexities lead to the same scale resolutions we got using these same perplexities and thread-reatio = 1.0 (outputs shown in Fig.1), but the global structure we already captured is preserved.
+
 ```{r, out.width = '45%', fig.show = 'hold'}
 nulL <- lapply(2:6, function(i) {
   g <- g.threadRatio1[[i]]
@@ -161,6 +174,8 @@ nulL <- lapply(2:6, function(i) {
 ```
 
 ### EFC hl-Correlation
+
+The HL-correlation shows a decrease as we enhanced local structure while preserving global structure because short/long distances are not equally preserved.
 
 ```{r, eval = F}
 g.2030c <- lapply(g.2030c, function(g) bdm.hlCorr(D, g, zSampleSize = 1000, threads = 4))
@@ -177,6 +192,8 @@ knitr::kable(hlTable, caption = 'hl-Correlation by EFC-perplexity') %>%
 
 ### EFC k-ary neighborhood preservation
 
+In terms of kNP we clearly observe that while preserving the global structure (linAUC), EFC results in a clear increase of local structure (logAUC).
+
 ```{r, eval = F}
 g.2030c <- lapply(g.2030c, function(g) bdm.knp(D, g, k.max = NULL, sampling = 0.9, threads = 4))
 ```
@@ -186,6 +203,8 @@ bdm.knp.plot(g.2030c, ppxfrmt = 0)
 ```
 
 ### Running Times
+
+The running time cost of EFC is obviously high, but a few iterations are usually enough to show some imprevement in the definition of the local structure.
 
 ```{r, echo = F}
 # trick ;)

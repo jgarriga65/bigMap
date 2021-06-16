@@ -18,7 +18,7 @@
 #include <numeric>      // std::iota
 #include <algorithm>    // std::nth_element, std::sort, std::stable_sort
 
-#include "mydist.h"
+#include "sqdist.h"
 #include "affmtx.h"
 
 // using namespace arma;
@@ -27,13 +27,13 @@ using namespace std;
 
 // check neighbors' set size
 // [[Rcpp::export]]
-Rcpp::NumericVector nnSS_chk(SEXP sexpX, SEXP sexpB, arma::Col<int> indexes, bool isDistance, bool isSparse, size_t nnSize)
+Rcpp::NumericVector nnSS_chk(SEXP sexpX, SEXP sexpB, arma::Col<int> indexes, bool isDistance, bool isSparse, unsigned int nnSize)
 {
 	// indexes
 	int* zIdx = indexes.begin();
-	size_t thread_size = indexes.size();
+	unsigned int thread_size = indexes.size();
 	//. thread affinity matrix
-	size_t aff_size = thread_size *(thread_size -1) /2;
+	unsigned int aff_size = thread_size *(thread_size -1) /2;
 	double* thread_P = (double*) calloc(aff_size, sizeof(double));
 	// . indexes of data-point pairs with significant atractive forces
 	int* thread_W = (int*) calloc(aff_size, sizeof(int));
@@ -48,9 +48,9 @@ Rcpp::NumericVector nnSS_chk(SEXP sexpX, SEXP sexpB, arma::Col<int> indexes, boo
 	// . neighbors' set size
 	Rcpp::NumericVector thread_nnSS(thread_size);
 	thread_nnSS.fill(0);
-	for (size_t i = 0; i < thread_size; i++) {
-		for (size_t j = i +1; j < thread_size; j++) {
-			size_t ij = ijIdx(thread_size, i, j);
+	for (unsigned int i = 0; i < thread_size; i++) {
+		for (unsigned int j = i +1; j < thread_size; j++) {
+			unsigned int ij = ijIdx(thread_size, i, j);
 			if (thread_P[ijIdx(thread_size, i, j)] > 0) {
 				thread_nnSS[i] ++;
 				thread_nnSS[j] ++;
@@ -61,5 +61,6 @@ Rcpp::NumericVector nnSS_chk(SEXP sexpX, SEXP sexpB, arma::Col<int> indexes, boo
 	delete affmtx;
 	free(thread_W); thread_W = NULL;
 	free(thread_P); thread_P = NULL;
+	zIdx = NULL;
 	return thread_nnSS;
 }

@@ -8,3 +8,6 @@ package/.Rbuildignore
 package/bigMap.Rproj
 bigMap.Rcheck
 .Rproj.user
+
+examples/Macosko
+

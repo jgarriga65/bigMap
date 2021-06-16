@@ -1,0 +1,141 @@
+---
+title: "Primes1G. pt-SNE"
+author: |-
+  J.Garriga; F.Bartumeus\
+  ICREA Movement Ecology Laboratory (CEAB-CSIC)\
+  jgarriga@ceab.csic.es
+date: "bigMap_4.5.0, `r format(Sys.Date(), '%b %Y')`"
+output: html_document
+---
+
+```{r, echo = FALSE}
+library(knitr)
+library(kableExtra)
+```
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, }
+library(bigMap)
+# load aux. stuff 
+source('./primes.R')
+```
+
+### Load data
+
+The Primes1G data set is a structured representation of the first 10^6 integers based on their prime factor decomposition. This is a highly sparse matrix with 78498 dimensions (primes lower than 10^6) where the values are the prime factorisation powers. We use a compact matrix format where odd columns hold the values of the columns (primes) in the original matrix and even columns hold the powers themselves. We also include number 0 in the first row with all zeros, but we do not incude number 1. So rows 2, 3, 4, ... correspond to numbers 2, 3, 4, ... This results in a matrix with 10^6 rows and 14 columns.
+  
+```{r, }
+load('./P1G.RData')
+```
+
+This data set is inspired by the work of John Williamson https://johnhw.github.io/umap_primes/index.md.html, though we note some differences:
+
+  + in Williamson's work any factor is represented as either a zero or a one, just indicating divisibility by that factor, while in our approach we use the actual power for each factor to have unique representations for each integer;
+  
+  + in Williamson's work affinities are based on cosine similarity, while we use euclidean distances.
+
+### Run pt-SNE
+
+We use the script below to run pt-SNE on this data set using a HPC platform with 101 cores and 8GB/core,
+
+```
+# ./P1G_start.R: 
+# Run pt-SNE on Primes1G
+# Perform EFC with perplexities 5000 and 500
+# Compute kNP and HL-correlation
+
+# +++ load package
+library(bigMap)
+
+# +++ load data
+load('./P1G.RData')
+
+# +++ start MPI cluster
+mpi.cl <- bdm.mpi.start(threads)
+if (is.null(mpi.cl)) return()
+
+# +++ run init (compute betas)
+m <- bdm.init(P1G, dSet.name = 'P1G', is.sparse = T, ppx = 100000, threads = 101, mpi.cl = mpi.cl)
+save(m, file = './P1G_100000B.RData')
+
+# +++ bypass re-exporting data to workers
+P1G <- NULL
+
+# +++ run ptSNE
+m <- bdm.ptsne(P1G, m, theta = 0.33, threads = 101, mpi.cl = mpi.cl, layers = 2)
+
+# +++ run EFC
+m.list <- list(m)
+m.list <- bdm.efc(P1G, m.list, ppx = 5000, iters = 100, theta = 0.33, threads = 101, mpi.cl = mpi.cl)
+
+# +++ compute kNP
+m.list <- lapply(m.list, function(m) bdm.knp(P1G, m, k.max = 500000, sampling = 0.25, threads = threads, mpi.cl = mpi.cl))
+
+# +++ hlC
+m.list <- lapply(m.list, function(m) bdm.hlCorr(P1G, m, threads = threads, mpi.cl = mpi.cl)
+
+# +++ save 
+save(m.list, file = './P1G_100000X.RData')
+
+# +++ stop cluster
+bdm.mpi.stop(mpi.cl)
+
+```
+
+Submit:
+
+```
+$ qsub -pe ompi 101 -l h_vmem=8G Rsnow ~/P1G_start.R
+```
+
+### Load results
+
+```{r, echo = F}
+load('./P1G_100000X.RData')
+```
+
+### Embedding cost/size function
+
+```{r, out.width = '33%', fig.show = 'hold'}
+bdm.cost(m.list[[1]])
+```
+
+### Output
+
+```{r, out.width = '50%', fig.show = 'hold'}
+nulL <- lapply(m.list, function(m) primes.plot(P1G, m))
+```
+
+### hl-Correlation
+
+```{r, }
+hlTable <- t(sapply(m.list, function(m) summary(m$hlC)))
+rownames(hlTable) <- c('ppx10000', '+efc.5000', '+efc.500')
+knitr::kable(hlTable, caption = 'hl-Correlation') %>%
+  kable_styling(full_width = F)
+```
+
+### k-ary neighborhood preservation
+
+```{r, }
+bdm.knp.plot(m.list, ppxfrmt = 0)
+```
+
+### Running Times
+
+```{r, }
+m <- m.list[[1]]
+t1 <- c(m$ppx$t[3], m$t$epoch, m$t$ptsne[3], (m$ppx$t[3] +m$t$ptsne[3]), 0, 0)
+t2 <- c(0, 0, 0, t1[4], m.list[[2]]$ppx$t[3], m.list[[2]]$t$efc[[3]])
+t3 <- c(0, 0, 0, t1[4], m.list[[3]]$ppx$t[3], m.list[[3]]$t$efc[[3]])
+rTimes <- round(cbind(t1, t2, t3) /60, 1)
+colnames(rTimes) <- c('ppx10000', '+efc.5000', '+efc.500')
+rownames(rTimes) <- c('betas', 'epoch', 'pt-SNE', 'total', '+efc. (betas)', '+efc. (iters)')
+knitr::kable(rTimes, caption = 'Computation times (min)') %>%
+  kable_styling(full_width = F)
+```
+
+*Run on: Intel(R) Xeon(R) CPU E31225 @ 3.10GHz, 4 cores, 16GB RAM.*

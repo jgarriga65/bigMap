@@ -17,14 +17,6 @@ centerScale <- function(sexpX, is_distance, is_sparse) {
     invisible(.Call(`_bigMap_centerScale`, sexpX, is_distance, is_sparse))
 }
 
-z_spQlty <- function(sexpX, sexpB, sexpY, I, is_distance) {
-    .Call(`_bigMap_z_spQlty`, sexpX, sexpB, sexpY, I, is_distance)
-}
-
-z_rbQlty <- function(sexpX, sexpY, I, is_distance) {
-    .Call(`_bigMap_z_rbQlty`, sexpX, sexpY, I, is_distance)
-}
-
 z_kNP <- function(thread_rank, threads, sexpX, sexpY, is_distance, is_sparse, K, sampling) {
     .Call(`_bigMap_z_kNP`, thread_rank, threads, sexpX, sexpY, is_distance, is_sparse, K, sampling)
 }

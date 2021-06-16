@@ -50,7 +50,7 @@ Xdata.exp <- function(cl, inp.data, is.distance, is.sparse, normalize)
 		cat('+++ loading ', inp.data, ' \n', sep = '')
 		dataFile <- inp.data
 		clusterExport(cl, c('dataFile', 'is.distance'), envir = environment())
-		cl.Xdsc <- clusterEvalQ(cl,
+		nulL <- clusterEvalQ(cl,
 			if (thread.rank == thread.hldr) {
 				Xbm <- as.big.matrix(t(as.matrix(read.csv(dataFile))), type = 'double')
 			}

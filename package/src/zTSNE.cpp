@@ -27,7 +27,7 @@ using namespace Rcpp;
 
 // Exact/Approx. SOCKET implementation of t-SNE
 // [[Rcpp::export]]
-double sckt_zTSNE(int thread_rank, size_t threads, size_t layers, SEXP sexpX, SEXP sexpB, SEXP sexpY, SEXP sexpI, arma::Col<double> &eRange, int iters, double nnSize, double lRate, double theta, double alpha, bool isDistance, bool isSparse, double latEx)
+double sckt_zTSNE(unsigned int thread_rank, unsigned int threads, unsigned int layers, SEXP sexpX, SEXP sexpB, SEXP sexpY, SEXP sexpI, arma::Col<double> &eRange, int iters, double nnSize, double lRate, double theta, double alpha, bool isDistance, bool isSparse, double latEx)
 {
 	// current mapping positions
 	Rcpp::XPtr<BigMatrix> bigY(sexpY);
@@ -35,25 +35,25 @@ double sckt_zTSNE(int thread_rank, size_t threads, size_t layers, SEXP sexpX, SE
 	// sampled row indexes
 	Rcpp::XPtr<BigMatrix> bigI(sexpI);
 	MatrixAccessor<int> I(*bigI);
-	size_t nX = bigI -> nrow();
+	unsigned int nX = bigI -> nrow();
 
 	// get chunk breaks
 	std::vector<int> breaks (threads +1, 0);
-	for (size_t b = 0; b < threads; b++) breaks[b] = (int) b *(nX +1.0) /threads;
+	for (unsigned int b = 0; b < threads; b++) breaks[b] = (int) b *(nX +1.0) /threads;
 	breaks[threads] = nX;
 	// get thread-size
-	size_t thread_size = 0;
-	for (size_t l = 0; l < layers; l++) {
-		size_t a = (thread_rank + l) % threads;
+	unsigned int thread_size = 0;
+	for (unsigned int l = 0; l < layers; l++) {
+		unsigned int a = (thread_rank + l) % threads;
 		thread_size += (breaks[a+1] - breaks[a]);
 	}
 
 	// get thread-indexes & thread-layers
 	int* zIdx = (int*) malloc(thread_size *sizeof(int));
 	int* zLay = (int*) malloc(thread_size *sizeof(int));
-	for (size_t l = 0, k = 0; l < layers; l++) {
-		size_t a = (thread_rank + l) % threads;
-		for (size_t i = breaks[a]; i < breaks[a+1]; i++, k++) {
+	for (unsigned int l = 0, k = 0; l < layers; l++) {
+		unsigned int a = (thread_rank + l) % threads;
+		for (unsigned int i = breaks[a]; i < breaks[a+1]; i++, k++) {
 			zIdx[k] = I[0][i];
 			zLay[k] = l;
 		}
@@ -81,8 +81,8 @@ double sckt_zTSNE(int thread_rank, size_t threads, size_t layers, SEXP sexpX, SE
 
 	// . starting mapping positions
 	double* thread_Y = (double*) malloc(thread_size *2 *sizeof(double));
-	for (size_t i = 0, k = 0; i < thread_size; i++) {
-		for (size_t d = 0; d < 2; d++, k++){
+	for (unsigned int i = 0, k = 0; i < thread_size; i++) {
+		for (unsigned int d = 0; d < 2; d++, k++){
 			thread_Y[k] = Y[zLay[i] *2 +d][zIdx[i]];
 		}
 	}
@@ -95,10 +95,10 @@ double sckt_zTSNE(int thread_rank, size_t threads, size_t layers, SEXP sexpX, SE
 	thread_Cost = tsne ->getCost(thread_P, thread_Y);
 
 	// update mapping positions
-	for (size_t l = 0, k = 0; l < layers; l++) {
-		for (size_t a = (thread_rank + l) % threads, b = 0; b < (breaks[a+1] -breaks[a]); b++) {
-			size_t j = I[0][breaks[a] +b];
-			for (size_t d = 0; d < 2; d++, k++) Y[l *2 +d][j] = thread_Y[k];
+	for (unsigned int l = 0, k = 0; l < layers; l++) {
+		for (unsigned int a = (thread_rank + l) % threads, b = 0; b < (breaks[a+1] -breaks[a]); b++) {
+			unsigned int j = I[0][breaks[a] +b];
+			for (unsigned int d = 0; d < 2; d++, k++) Y[l *2 +d][j] = thread_Y[k];
 		}
 	}
 
@@ -107,11 +107,11 @@ double sckt_zTSNE(int thread_rank, size_t threads, size_t layers, SEXP sexpX, SE
 	free(thread_Y); thread_Y = NULL;
 	//
 	delete affmtx;
-	free(zIdx); zIdx = NULL;
-	free(zLay); zLay = NULL;
 	free(thread_E); thread_E = NULL;
 	free(thread_W); thread_W = NULL;
 	free(thread_P); thread_P = NULL;
+	free(zIdx); zIdx = NULL;
+	free(zLay); zLay = NULL;
 	//
 	return thread_Cost;
 }
@@ -122,12 +122,12 @@ double sckt_zTSNE(int thread_rank, size_t threads, size_t layers, SEXP sexpX, SE
 // [[Rcpp::export]]
 void zChnks(Rcpp::List& Z_list, const arma::Mat<double>& Y, const arma::Col<int>& I, const Rcpp::List& brks_list)
 {
-	for (size_t z = 0; z < brks_list.length(); z++)
+	for (unsigned int z = 0; z < brks_list.length(); z++)
 	{
 		arma::Mat<int> brks = brks_list[z];
 		arma::Mat<double> zChnk = Z_list[z];
-		for (size_t l = 0, k = 0; l < brks.n_rows; l++) {
-			for (size_t j1 = l *2, j2 = l *2 +1, i = brks(l, 0); i < brks(l, 1); i++, k++) {
+		for (unsigned int l = 0, k = 0; l < brks.n_rows; l++) {
+			for (unsigned int j1 = l *2, j2 = l *2 +1, i = brks(l, 0); i < brks(l, 1); i++, k++) {
 				zChnk(k, 0) = I[i];
 				zChnk(k, 1) = Y(I[i], j1);
 				zChnk(k, 2) = Y(I[i], j2);
@@ -141,11 +141,11 @@ void zChnks(Rcpp::List& Z_list, const arma::Mat<double>& Y, const arma::Col<int>
 // [[Rcpp::export]]
 void updateY(arma::Mat<double>& Y, const arma::Col<int>& I, const Rcpp::List& zMap_list, const Rcpp::List& brks_list)
 {
-	for (size_t z = 0; z < zMap_list.length(); z++) {
+	for (unsigned int z = 0; z < zMap_list.length(); z++) {
 		arma::Mat<int> thrd_brks = brks_list[z];
 		arma::Mat<double> zY = zMap_list[z];
-		for (size_t l = 0, k = 0; l < thrd_brks.n_rows; l++){
-			for (size_t j1 = l *2, j2 = l *2 +1, i = thrd_brks(l, 0); i < thrd_brks(l, 1); i++, k++) {
+		for (unsigned int l = 0, k = 0; l < thrd_brks.n_rows; l++){
+			for (unsigned int j1 = l *2, j2 = l *2 +1, i = thrd_brks(l, 0); i < thrd_brks(l, 1); i++, k++) {
 				Y(I[i], j1) = zY(k, 0);
 				Y(I[i], j2) = zY(k, 1);
 			}
@@ -157,8 +157,8 @@ void updateY(arma::Mat<double>& Y, const arma::Col<int>& I, const Rcpp::List& zM
 // [[Rcpp::export]]
 double mpi_zTSNE(SEXP sexpX, SEXP sexpB, arma::Mat<double> &Y, arma::Col<int> indexes, arma::Col<double> &eRange, int iters, double nnSize, double lRate, double theta, double alpha, bool isDistance, bool isSparse, double latEx)
 {
-	// size_t N = bmL->nrow();
-	size_t thread_size = Y.n_rows;
+	// unsigned int N = bmL->nrow();
+	unsigned int thread_size = Y.n_rows;
 	// int* zIdx = reinterpret_cast <int*> (I.begin());
 	int* zIdx = indexes.begin();
 	// . cost function value
@@ -183,8 +183,8 @@ double mpi_zTSNE(SEXP sexpX, SEXP sexpB, arma::Mat<double> &Y, arma::Col<int> in
 
 	// . starting mapping positions
 	double* thread_Y = (double*) malloc(thread_size *2 *sizeof(double));
-	for (size_t i = 0, k = 0; i < thread_size; i++) {
-		for (size_t d = 0; d < 2; d++, k++) thread_Y[k] = Y(i, d);
+	for (unsigned int i = 0, k = 0; i < thread_size; i++) {
+		for (unsigned int d = 0; d < 2; d++, k++) thread_Y[k] = Y(i, d);
 	}
 
 	// +++ TSNE instance
@@ -195,8 +195,8 @@ double mpi_zTSNE(SEXP sexpX, SEXP sexpB, arma::Mat<double> &Y, arma::Col<int> in
 	thread_Cost = tsne ->getCost(thread_P, thread_Y);
 
 	// update mapping positions
-	for (size_t i = 0, k = 0; i < thread_size; i++) {
-		for (size_t d = 0; d < 2; d++, k++) Y(i, d) = thread_Y[k];
+	for (unsigned int i = 0, k = 0; i < thread_size; i++) {
+		for (unsigned int d = 0; d < 2; d++, k++) Y(i, d) = thread_Y[k];
 	}
 
 	// free memory
@@ -207,6 +207,7 @@ double mpi_zTSNE(SEXP sexpX, SEXP sexpB, arma::Mat<double> &Y, arma::Col<int> in
 	free(thread_E); thread_E = NULL;
 	free(thread_W); thread_W = NULL;
 	free(thread_P); thread_P = NULL;
+	zIdx = NULL;
 	//
 	return thread_Cost;
 }

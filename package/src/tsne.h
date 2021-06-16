@@ -16,22 +16,31 @@
 class TSNE
 {
 public:
-	size_t mY;							// embedding dimensions
-	size_t z;							// thread size
-	size_t w;							// approx. gradient size
-	double* eRange;						// embedding range
+
+	unsigned int mY;							// embedding dimensions
+	unsigned int z;							// thread size
+	unsigned int w;							// approx. gradient size
 	int max_iter;						// t-SNE parameters
 	double lRate, theta, alpha, zP;
 	std::vector<double> eta;
+	double* eRange;						// embedding range
 	double* exgg;
+
 	// constructor
-	TSNE(size_t z, size_t w, size_t mY, double* eRange, int max_iter, double lRate, double theta, double alpha, double zP, double* exgg);
+	TSNE(unsigned int z, unsigned int w, unsigned int mY, double* eRange, int max_iter, double lRate, double theta, double alpha, double zP, double* exgg);
+	//destructor
+	~TSNE() {
+		eRange = NULL;
+		exgg = NULL;
+	}
+
 	// run
 	void run2D(double* P, int* W, double* Y);
 	// compute Cost
 	double getCost(double* P, double* Y);
 	// update eRange
-	void row_Gradient(double* P, int* W, double* Y, double* thread_Y, size_t i, size_t zi);
+	void row_Gradient(double* P, int* W, double* Y, double* thread_Y, unsigned int i, unsigned int zi);
+
 private:
 	// compute gradient forces
 	double exact_Gradient(double* P, double* Y, double* atrF, double* repF);
