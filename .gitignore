@@ -10,4 +10,5 @@ bigMap.Rcheck
 .Rproj.user
 
 examples/Macosko
+examples/Primes1G/P1G_100000X.RData
 
