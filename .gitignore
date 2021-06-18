@@ -1,3 +1,7 @@
+
+bigMap.Rcheck
+.Rproj.user
+
 package/.Rproj.user
 package/.Rhistory
 package/.RData
@@ -6,9 +10,6 @@ package/Rplots.pdf
 package/package.Rproj
 package/.Rbuildignore
 package/bigMap.Rproj
-bigMap.Rcheck
-.Rproj.user
 
-examples/Macosko
 examples/Primes1G/P1G_100000X.RData
 

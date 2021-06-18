@@ -148,10 +148,10 @@ bdm.qMap <- function(bdm, data = NULL, labels = NULL, subset = NULL, qMap.levels
 }
 
 # ------------------------------------------------------------------------------
-# +++ beta quantile map
+# +++ Precision map (quantile map of betas)
 # ------------------------------------------------------------------------------
 
-bdm.qMap.beta <- function(m, qMap.levels = 8, qMap.cex = 0.1, bg = '#000000')
+bdm.pMap <- function(m, qMap.levels = 8, qMap.cex = 0.1, bg = '#000000')
 {
 	# get mapping
 	Y <- m$ptsne$Y[, 1:2]

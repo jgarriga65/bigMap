@@ -167,7 +167,7 @@ void affMtx::S2P(double* P, int* W)
 
 // transform input similarities into probabilities
 // FROM INPUT-DATA
-void affMtx::efc_X2P(unsigned int z_ini, unsigned int z_end, double* P, int* W)
+void affMtx::efr_X2P(unsigned int z_ini, unsigned int z_end, double* P, int* W)
 {
 	for (unsigned int zi = z_ini, i = 0; zi < z_end; zi++, i++) {
 		double Xi[mX];
@@ -198,7 +198,7 @@ void affMtx::efc_X2P(unsigned int z_ini, unsigned int z_end, double* P, int* W)
 
 // transform input similarities into probabilities
 // FROM FULL-DISTANCE-MATRIX
-void affMtx::efc_D2P(unsigned int z_ini, unsigned int z_end, double* P, int* W)
+void affMtx::efr_D2P(unsigned int z_ini, unsigned int z_end, double* P, int* W)
 {
 	for (unsigned int zi = z_ini, i = 0; zi < z_end; zi++, i++) {
 		double Bi = B[zi *4 +0];
@@ -224,7 +224,7 @@ void affMtx::efc_D2P(unsigned int z_ini, unsigned int z_end, double* P, int* W)
 
 // transform input euclidean-distances into probabilities
 // FROM SPARSE-MATRIX DATA
-void affMtx::efc_S2P(unsigned int z_ini, unsigned int z_end, double* P, int* W)
+void affMtx::efr_S2P(unsigned int z_ini, unsigned int z_end, double* P, int* W)
 {
 	for (unsigned int zi = z_ini, i = 0; zi < z_end; zi++, i++) {
 		double Xi[mX];

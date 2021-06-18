@@ -48,9 +48,9 @@ public:
 	// transform input similarities into unnormalized probabilities from SPARSE-DATA
 	void S2P(double* P, int* W);
 	// versions for enbedding final compression
-	void efc_X2P(unsigned int z_ini, unsigned int z_end, double* P, int* W);
-	void efc_D2P(unsigned int z_ini, unsigned int z_end, double* P, int* W);
-	void efc_S2P(unsigned int z_ini, unsigned int z_end, double* P, int* W);
+	void efr_X2P(unsigned int z_ini, unsigned int z_end, double* P, int* W);
+	void efr_D2P(unsigned int z_ini, unsigned int z_end, double* P, int* W);
+	void efr_S2P(unsigned int z_ini, unsigned int z_end, double* P, int* W);
 
 };
 
