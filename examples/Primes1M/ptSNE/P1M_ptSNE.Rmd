@@ -1,0 +1,140 @@
+---
+title: "Primes1M. pt-SNE"
+author: |-
+  J.Garriga; F.Bartumeus\
+  ICREA Movement Ecology Laboratory (CEAB-CSIC)\
+  jgarriga@ceab.csic.es
+date: "bigMap_4.5.0 `r format(Sys.Date(), '%b %Y')`"
+output: html_document
+---
+
+```{r, echo = FALSE}
+library(knitr)
+library(kableExtra)
+```
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, }
+library(bigMap)
+# load aux. stuff 
+source('../primes.R')
+```
+
+### Load data
+
+```{r, }
+load('../P1M.RData')
+```
+
+### Run pt-SNE
+
+### Load data
+
+The Primes1M data set is a structured representation of the first 10^6 integers based on their prime factor decomposition. This is a highly sparse matrix with 78498 dimensions (primes lower than 10^6) where the values are the prime factorisation powers. We use a compact matrix format where odd columns hold the values of the columns (primes) in the original matrix and even columns hold the powers themselves. We also include number 0 in the first row with all zeros, but we do not incude number 1. So rows 2, 3, 4, ... correspond to numbers 2, 3, 4, ... This results in a matrix with 10^6 rows and 14 columns.
+  
+```{r, }
+load('../P1M.RData')
+```
+
+This data set is inspired by the work of John Williamson https://johnhw.github.io/umap_primes/index.md.html, though we note some differences:
+
+  + in Williamson's work any factor is represented as either a zero or a one, just indicating divisibility by that factor, while in our approach we use the actual power for each factor to have unique representations for each integer;
+  
+  + in Williamson's work affinities are based on cosine similarity, while we use euclidean distances.
+
+### Run pt-SNE
+
+We use the script below to run pt-SNE on this data set using a HPC platform with 101 cores and 4GB/core,
+
+```
+# ./bm450/P1M_start.R: 
+# Run pt-SNE on Primes1M
+# Compute kNP and HL-correlation
+
+# +++ load package
+library(bigMap)
+
+# +++ load data
+load('./P1M.RData')
+
+# +++ start MPI cluster
+mpi.cl <- bdm.mpi.start(threads)
+if (is.null(mpi.cl)) return()
+
+# +++ range of perplexities
+ppx.list <- c(5000, 10000, 25000, 50000)
+
+# +++ run init (compute betas)
+m <- bdm.init(P1M, dSet.name = 'P1M', is.sparse = T, ppx = ppx.list, threads = 101, mpi.cl = mpi.cl)
+save(m, file = './P1M_init.RData')
+
+# +++ run ptSNE
+m.list <- bdm.ptsne(P1M, m, theta = 0.33, threads = 101, mpi.cl = mpi.cl, layers = 2)
+
+# +++ kNP + hlC
+m.list <- lapply(m.list, function(m)
+{
+  m <- bdm.knp(NULL, m, k.max = 500000, sampling = 0.25, threads = threads, mpi.cl = mpi.cl)
+  m <- bdm.hlCorr(NULL, m, threads = threads, mpi.cl = mpi.cl)
+  m
+})
+
+# +++ save 
+save(m.list, file = './bm450/P1M_ptSNE.RData')
+
+# +++ stop cluster
+bdm.mpi.stop(mpi.cl)
+
+```
+
+Submit:
+
+```
+$ qsub -pe ompi 101 -l h_vmem=4G Rsnow ~/bm450/P1M_start.R
+```
+### Load output
+
+```{r, }
+# load m.list 
+load('./P1M_ptsne.RData')
+```
+
+### Output
+
+```{r, out.width = '50%', fig.show = 'hold'}
+#nulL <- lapply(m.list, function(m) primes.plot(P1M, m))
+```
+
+### hl-Correlation
+
+```{r, eval = F}
+hlTable <- sapply(m.list, function(m) summary(m$hlC)[4])
+hlTable <- matrix(round(hlTable, 4), nrow = 1)
+colnames(hlTable) <- sapply(m.list, function(m) m$ppx$ppx)
+rownames(hlTable) <- c('<hlC>')
+knitr::kable(hlTable, caption = 'hl-Correlation') %>%
+  kable_styling(full_width = F)
+```
+
+### k-ary neighborhood preservation
+
+```{r, }
+#bdm.knp.plot(m.list, ppxfrmt = 0)
+```
+
+### Running Times
+
+```{r, }
+rTimes <- sapply(m.list, function(m) c(m$ppx$t[[3]], m$t$ptsne[[3]]))
+rTimes <- round(rbind(rTimes, apply(rTimes, 2, sum)) /60, 2)
+colnames(rTimes) <- sapply(m.list, function(m) m$ppx$ppx)
+rownames(rTimes) <- c('betas', 'pt-SNE', 'total')
+knitr::kable(rTimes, caption = 'Computation times (min)') %>%
+  kable_styling(full_width = F)
+```
+
+*Run on: Intel(R) Xeon(R) CPU E5-2650 v3 2.30GHz, 32Mb cache, 101 cores, 4GB/core RAM.*
+

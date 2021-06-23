@@ -14,7 +14,7 @@ package/bigMap.Rproj
 examples/Primes1M/ptSNE/P1M_100000X.RData
 
 examples/Primes1M/FItSNE/P1M_fitsne.RData
-examples/Primes1M/ptSNE/P1M_ptSNE.RData
+examples/Primes1M/ptSNE/P1M_ptsne.RData
 examples/Primes1M/UMAP/P1M_umap.RData
 
 examples/Tasic/mlist.RData
