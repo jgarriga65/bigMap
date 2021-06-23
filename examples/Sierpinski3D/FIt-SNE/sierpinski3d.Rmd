@@ -1,0 +1,99 @@
+---
+title: "Sierpinski3d. FIt-SNE"
+author: |-
+  J.Garriga; F.Bartumeus\
+  ICREA Movement Ecology Laboratory (CEAB-CSIC)\
+  jgarriga@ceab.csic.es
+date: "`r format(Sys.Date(), '%b %Y')`"
+output: html_document
+---
+
+```{r, echo = FALSE}
+library(knitr)
+library(kableExtra)
+```
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, }
+library(bigMap)
+```
+
+### Load data
+
+```{r, }
+D <- as.matrix(read.csv('../sierpinski3d.mtx', sep = '', header = F))
+```
+
+### Run Fit-SNE
+
+```{r, eval = F}
+source('~/FitSNE/fast_tsne.R', chdir = T)
+# perplexities
+ppx.list <- round(nrow(d) *c(.01, .05, .1, .2, .3, .4, .5, .6, .7, .8, .9, .95, .99), 0)
+#
+g.list <- lapply(ppx.list, function(ppx) {
+  t <- system.time(Y <- fftRtsne(D, perplexity = ppx))
+  # structure results as a bigMap instance
+  g <- list(dSet = 'S3D', is.distance = T, is.sparse = F, normalize = T, ppx = list(ppx = ppx), ptsne = list(Y = Y), t = t)
+  g
+})
+save(g.list, file = './glist.RData')
+```
+
+```{r, echo = F}
+load('./glist.RData')
+```
+
+### Output
+
+```{r, out.width = '33%', fig.show = 'hold'}
+# source graph plot
+source('../graphs.R')
+# load edge matrix
+E <- as.matrix(read.csv('../sierpinski3d.edg', sep = '', header = F))
+# plot
+nulL <- lapply(g.list, function(g) graph.plot(g, E))
+```
+
+### hl-Correlation
+
+```{r, eval = F}
+g.list <- lapply(g.list, function(g) bdm.hlCorr(D, g, zSampleSize = 1000, threads = 4))
+save(g.list, file = './glist.RData')
+```
+
+```{r, }
+hlTable <- sapply(g.list, function(g) summary(g$hlC)[4])
+hlTable <- matrix(round(hlTable, 4), nrow = 1)
+colnames(hlTable) <- sapply(g.list, function(g) g$ppx$ppx)
+rownames(hlTable) <- c('<hlC>')
+knitr::kable(hlTable, caption = 'hl-Correlation') %>%
+  kable_styling(full_width = F)
+```
+
+### Kary-neighborhood preservation
+
+```{r, eval = F}
+g.list <- lapply(g.list, function(g) bdm.knp(D, g, k.max = NULL, sampling = 0.9, threads = 4))
+save(g.list, file = './glist.RData')
+```
+
+```{r, }
+bdm.knp.plot(g.list, ppxfrmt = 0)
+```
+
+### Running Times
+
+```{r, }
+rTimes <- round(sapply(g.list, function(m) m$t$fitSNE[[3]]), 0)
+rTimes <- matrix(rTimes, nrow = 1)
+colnames(rTimes) <- sapply(g.list, function(m) m$ppx$ppx)
+rownames(rTimes) <- c('FitSNE')
+knitr::kable(rTimes, caption = 'Computation times (s)') %>%
+  kable_styling(full_width = F)
+```
+
+*Run on: Intel(R) Xeon(R) CPU E31225 @ 3.10GHz, 4 cores, 16GB RAM.*

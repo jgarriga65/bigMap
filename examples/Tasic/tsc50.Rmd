@@ -1,5 +1,5 @@
 ---
-title: "Tasic_2018"
+title: "Tasic et al. 2018"
 author: |-
   J.Garriga; F.Bartumeus\
   ICREA Movement Ecology Laboratory (CEAB-CSIC)\
@@ -44,19 +44,16 @@ m <- bdm.init(X50, dSet.name = 'Tasic50', ppx = ppx, threads = 20, dSet.labels =
 
 # +++ run ptSNE (20 threads, 2 layers)
 m.list <- bdm.ptsne(X50, m, lRate = NULL, theta = .0, threads = 20, layers = 2)
-save(m.list, file = './mlist.RData')
 
-# +++ k-ary neighborhood preservation
+# +++ kNP + hlC
 m.list <- lapply(m.list, function(m){
-        bdm.knp(X50, m, k.max = NULL, sampling = 0.9, threads = 20)
+        m <- bdm.knp(X50, m, threads = 20)
+        m <- bdm.hlCorr(X50, m, threads = 20)
+        m
 })
-save(m.list, file = './mlist.RData')
 
-# +++ HD/LD Correlation
-m.list <- lapply(m.list, function(m){
-        bdm.hlCorr(X50, m, zSampleSize = 1000, threads = 20)
-})
-save(m.list, file = '/mlist.RData')
+# +++ save
+save(m.list, file = './mlist.RData')
 
 ```
 
@@ -74,7 +71,7 @@ nulL <- lapply(m.list, function(m) bdm.cost(m))
 
 ### Embedding
 
-```{r, echo = FALSE, out.width = '33%', fig.show = 'hold'}
+```{r, out.width = '33%', fig.show = 'hold'}
 nulL <- lapply(m.list, function(m) {
   bdm.ptsne.plot(m, ptsne.cex = 0.5, class.pltt = tsc50$pltt)
 })
@@ -89,8 +86,10 @@ nulL <- lapply(m.list, function(m) {
 ### hl-Correlation
 
 ```{r, }
-hlTable <- t(sapply(m.list, function(m) summary(m$hlC)))
-rownames(hlTable) <- sapply(m.list, function(m) m$ppx$ppx)
+hlTable <- sapply(m.list, function(m) mean(m$hlC))
+hlTable <- matrix(round(hlTable, 4), nrow = 1)
+colnames(hlTable) <- sapply(m.list, function(m) m$ppx$ppx)
+rownames(hlTable) <- c('<hlC>')
 knitr::kable(hlTable, caption = 'hl-Correlation') %>%
   kable_styling(full_width = F)
 ```

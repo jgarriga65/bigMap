@@ -1,0 +1,225 @@
+---
+title: "Sierpinski3d. Figure 2"
+author: |-
+  J.Garriga; F.Bartumeus\
+  ICREA Movement Ecology Laboratory (CEAB-CSIC)\
+  jgarriga@ceab.csic.es
+date: "BigMap_4.5.0, `r format(Sys.Date(), '%b %Y')`"
+output: html_document
+---
+
+```{r, echo = FALSE}
+library(knitr)
+library(kableExtra)
+```
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, }
+library(bigMap)
+```
+
+Run pt-SNE on Sierpinski-3d with perplexity 2030 (99% of the data set size) and a decreasing range of thread-ratio. We show:
+
+  + loss of local structure accuracy with decreasing thread-ratio;
+  + decrease in running time (increasing speed);
+  + improvement of the final embedding by means of a final refinement (EFR);
+  + using different perplexities in EFR enhances the structure at the corresponding scale while preserving the captured global structure;
+
+
+```{r, out.width = '33%', fig.show = 'hold'}
+# source aux. stuff (graph plot function)
+source('../graphs.R')
+# load edge matrix
+E <- as.matrix(read.csv('../sierpinski3d.edg', sep = '', header = F))
+```
+
+### Load data
+
+```{r, }
+D <- as.matrix(read.csv('../sierpinski3d.mtx', sep = '', header = F))
+```
+
+### Compute betas
+
+```{r, eval = F, results = F}
+g <- bdm.init(D, dSet.name = 'S3D', is.distance = T, ppx = 2030, threads = 4)
+```
+
+### Run ptSNE (perplexity = 2030, decreasing thread-ratio)
+
+```{r, eval = F, results = F}
+g1 <- bdm.ptsne(D, g, threads = 1, layers = 1)
+g2 <- bdm.ptsne(D, g, threads = 3, layers = 2)
+g3 <- bdm.ptsne(D, g, threads = 4, layers = 2)
+g4 <- bdm.ptsne(D, g, threads = 5, layers = 2)
+g5 <- bdm.ptsne(D, g, threads = 6, layers = 2)
+g6 <- bdm.ptsne(D, g, threads = 8, layers = 2)
+```
+
+```{r, eval = F}
+g.list <- list(g1, g2, g3, g4, g5, g6)
+save(g.list, file = './s3d_2030.RData')
+```
+
+```{r, echo = F}
+load('./s3d_2030.RData')
+```
+
+### Output
+
+Note that the global structure is more or less preserved (we are using a very high perplexity) but the local structure gets worst as the thread-ratio is decreased.
+
+```{r, out.width = '33%', fig.show = 'hold'}
+nulL <- lapply(g.list, function(g) graph.plot(g, E))
+```
+
+### hl-Correlation
+
+In terms of HL-correlation the loss in structure (on average) is minimal.
+
+```{r, eval = F}
+g.list <- lapply(g.list, function(g) bdm.hlCorr(D, g, threads = 4))
+save(g.list, file = './s3d_2030.RData')
+```
+
+```{r, }
+hlTable <- sapply(g.list, function(g) mean(g$hlC))
+hlTable <- matrix(round(hlTable, 4), nrow = 1)
+threadRatio <- sapply(g.list, function(g) g$ptsne$layers /g$ptsne$threads)
+colnames(hlTable) <- round(threadRatio, 2)
+rownames(hlTable) <- c('<hlC>')
+knitr::kable(hlTable, caption = 'hl-Correlation by thread-ratio') %>%
+  kable_styling(full_width = F)
+```
+
+### k-ary neighborhood preservation
+
+In terms of kNP, the global structure (linAUC) is notably preserved (with the exception of g5 with thread-ratio = 0.33, blue line) but the loss in local structre (logAUC) is clearly perceptible.
+
+```{r, eval = F}
+g.list <- lapply(g.list, function(g) bdm.knp(D, g, threads = 4))
+save(g.list, file = './s3d_2030.RData')
+```
+
+```{r, }
+bdm.knp.plot(g.list, ppxfrmt = 0)
+```
+
+### Running Times
+
+Note the correlation between decreasing thread-ratio and decreasing running time.
+
+```{r, }
+rTimes <- sapply(g.list, function(g) c(g$ppx$t[3], g$t$epoch, g$t$ptsne[3], sum(c(g$ppx$t[3], g$t$ptsne[3]))))
+rTimes <- round(rTimes, 2)
+threadRatio <- sapply(g.list, function(g) g$ptsne$layers /g$ptsne$threads)
+colnames(rTimes) <- round(threadRatio, 2)
+rownames(rTimes) <- c('betas', 'epoch', 'ptSNE', 'total')
+knitr::kable(rTimes, caption = 'Computation times (s) by thread-ratio') %>%
+  kable_styling(full_width = F)
+```
+
+*Run on: Intel(R) Xeon(R) CPU E31225 @ 3.10GHz, 4 cores, 16GB RAM.*
+
+### Embedding final refinement (EFR)
+
+Let's take g6 (perplexity 2030 and lowest thread-ratio=0.25) and apply EFR with different refinement perplexities.
+
+```{r, eval = F}
+# take the embedding with lowest thread-ratio
+g.2030R <- g.list[6:6]
+# refine with ppx = 1845 (0.90)
+g.2030R <- bdm.efr(D, g.2030R, ppx = 1845, iters = 50, threads = 4)
+# refine with ppx = 1025 (0.50)
+g.2030R <- bdm.efr(D, g.2030R, ppx = 1025, iters = 50, threads = 4)
+# refine with ppx = 205 (0.10)
+g.2030R <- bdm.efr(D, g.2030R, ppx = 205, iters = 50, threads = 4)
+# refine with ppx = 102 (0.05)
+g.2030R <- bdm.efr(D, g.2030R, ppx = 102, iters = 50, threads = 4)
+# refine with ppx = 20 (0.01)
+g.2030R <- bdm.efr(D, g.2030R, ppx = 20, iters = 50, threads = 4)
+save(g.2030R, file = './s3d_2030R.RData')
+```
+
+```{r, echo = F}
+load('./s3d_2030R.RData')
+```
+
+### EFR output vs. output from Fig.1 (with thread-ratio=1.0)
+
+```{r, }
+# load embeddings with thread-ratio = 1.0 (from Fig.1)
+load('../pt-SNE/glist.RData')
+g.threadRatio1 <- g.list[c(13, 11, 7, 3, 2, 1)]
+```
+
+```{r, out.width = '45%', fig.show = 'hold'}
+g <- g.threadRatio1[[1]]
+graph.plot(g, E, title = 'ppx=2030, thread-ratio=1.0')
+g <- g.2030R[[1]]
+graph.plot(g, E, title = 'ppx=2030, thread-ratio=0.25')
+```
+
+Note that decreasing EFR perplexities lead to the scale resolutions obtained using these same perplexities and thread-reatio = 1.0 (outputs shown in Fig.1), but the global structure we already captured is preserved.
+
+```{r, out.width = '45%', fig.show = 'hold'}
+nulL <- lapply(2:6, function(i) {
+  g <- g.threadRatio1[[i]]
+  graph.plot(g, E, title = paste('ppx=', g$ppx$ppx, ', thread-ratio=1.0', sep = ''))
+  g <- g.2030R[[i]]
+  graph.plot(g, E, title = paste('ppx=2030, thread-ratio=0.25, +efr.', g$ppx$ppx, sep = ''))
+})
+```
+
+### EFR hl-Correlation
+
+The HL-correlation shows a decrease as we enhanced local structure while preserving global structure because short/long distances are not equally preserved.
+
+```{r, eval = F}
+g.2030R <- lapply(g.2030R, function(g) bdm.hlCorr(D, g, zSampleSize = 1000, threads = 4))
+```
+
+```{r, }
+hlTable <- sapply(g.2030R, function(g) mean(g$hlC))
+hlTable <- matrix(round(hlTable, 4), nrow = 1)
+efr.ppx <- paste('efr.', sapply(g.2030R, function(g) g$ppx$ppx), sep = '')
+colnames(hlTable) <- efr.ppx
+rownames(hlTable) <- c('<hlC>')
+knitr::kable(hlTable, caption = 'hl-Correlation by EFR-perplexity') %>%
+  kable_styling(full_width = F)
+```
+
+### EFR k-ary neighborhood preservation
+
+In terms of kNP we clearly observe that while preserving the global structure (linAUC), EFR results in a clear increase of local structure (logAUC).
+
+```{r, eval = F}
+g.2030R <- lapply(g.2030R, function(g) bdm.knp(D, g, k.max = NULL, sampling = 0.9, threads = 4))
+```
+
+```{r, }
+bdm.knp.plot(g.2030R, ppxfrmt = 0)
+```
+
+### Running Times
+
+The running time of EFR can be relevant, but a few iterations are usually enough to show some imprevement in the definition of the local structure.
+
+```{r, echo = F}
+# trick ;)
+g.2030R[[1]]$t$efr <- c(0, 0, 0)
+```
+
+```{r, }
+rTimes <- sapply(g.2030R, function(g) c(g$ppx$t[3], g$t$epoch, g$t$ptsne[3], g$t$efr[3], sum(c(g$ppx$t[3], g$t$ptsne[3], g$t$efr[3]))))
+rTimes <- round(rTimes, 2)
+colnames(rTimes) <- sapply(g.2030R, function(g) g$ppx$ppx)
+rownames(rTimes) <- c('betas', 'epoch', 'ptSNE', 'EFR', 'total')
+knitr::kable(rTimes, caption = 'Computation times (s) by EFR-perplexity') %>%
+  kable_styling(full_width = F)
+```
+
+*Run on: Intel(R) Xeon(R) CPU E31225 @ 3.10GHz, 4 cores, 16GB RAM.*
