@@ -140,25 +140,25 @@ nulL <- lapply(m.list3, function(m) {
 })
 ```
 
-### Precision maps
+<!-- ### Precision maps -->
 
-#### pt-SNE
+<!-- #### pt-SNE -->
 
-```{r, out.width = '25%', fig.show = 'hold'}
-nulL <- lapply(m.list1, function(m) bdm.pMap(m))
-```
+<!-- ```{r, out.width = '25%', fig.show = 'hold'} -->
+<!-- nulL <- lapply(m.list1, function(m) bdm.pMap(m)) -->
+<!-- ``` -->
 
-#### pt-SNE+EFR.ppx
+<!-- #### pt-SNE+EFR.ppx -->
 
-```{r, out.width = '25%', fig.show = 'hold'}
-nulL <- lapply(m.list2, function(m) bdm.pMap(m))
-```
+<!-- ```{r, out.width = '25%', fig.show = 'hold'} -->
+<!-- nulL <- lapply(m.list2, function(m) bdm.pMap(m)) -->
+<!-- ``` -->
 
-#### pt-SNE+EFR.45
+<!-- #### pt-SNE+EFR.45 -->
 
-```{r, out.width = '25%', fig.show = 'hold'}
-nulL <- lapply(m.list3, function(m) bdm.pMap(m))
-```
+<!-- ```{r, out.width = '25%', fig.show = 'hold'} -->
+<!-- nulL <- lapply(m.list3, function(m) bdm.pMap(m)) -->
+<!-- ``` -->
 
 ### hl-Correlation
 
@@ -200,8 +200,8 @@ knitr::kable(hlTable, caption = 'hl-Correlation') %>%
 #### pt-SNE+EFR.45
 
 ```{r, }
-hlTable <- sapply(m.list3, function(m) summary(m$hlC)[4])
-hlTable <- matrix(hlTable, nrow = 1)
+hlTable <- sapply(m.list3, function(m) mean(m$hlC))
+hlTable <- matrix(round(hlTable, 4), nrow = 1)
 colnames(hlTable) <- sapply(1:8, function(i) paste(m.list1[[i]]$ppx$ppx, '+', m.list3[[i]]$ppx$ppx))
 rownames(hlTable) <- c('<hlC>')
 knitr::kable(hlTable, caption = 'hl-Correlation') %>%
