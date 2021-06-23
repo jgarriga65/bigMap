@@ -11,6 +11,7 @@ bdm.init(
   is.sparse = F,
   normalize = T,
   ppx = 100,
+  xppx = 3,
   dSet.labels = NULL,
   threads = 4,
   mpi.cl = NULL

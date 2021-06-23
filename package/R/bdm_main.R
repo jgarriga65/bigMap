@@ -66,7 +66,7 @@ bdm.example <- function()
 #' myMap <- bdm.init(exData[, 1:4], dSet.name = 'ex', ppx = 250, labels = exData[, 5])
 #' }
 
-bdm.init <- function(dSet.data, dSet.name = NULL, is.distance = F, is.sparse = F, normalize = T, ppx = 100, dSet.labels = NULL, threads = 4, mpi.cl = NULL)
+bdm.init <- function(dSet.data, dSet.name = NULL, is.distance = F, is.sparse = F, normalize = T, ppx = 100, xppx = 3.0, dSet.labels = NULL, threads = 4, mpi.cl = NULL)
 {
 	bdm <- list()
 	if (is.null(dSet.name)) dSet.name = '__'
@@ -93,9 +93,9 @@ bdm.init <- function(dSet.data, dSet.name = NULL, is.distance = F, is.sparse = F
 		bdm$mX <- dimX[2]
 		# compute betas
 		if (length(ppx) == 1) {
-			bdm$ppx <- list(beta.get(cl, ppx))
+			bdm$ppx <- list(beta.get(cl, ppx, xppx = xppx))
 		} else {
-			bdm$ppx <- lapply(ppx, function(ppx_i) beta.get(cl, ppx_i))
+			bdm$ppx <- lapply(ppx, function(ppx_i) beta.get(cl, ppx_i, xppx = xppx))
 		}
 		# stop cluster
 		if (is.null(mpi.cl)) cluster.stop(cl)
