@@ -85,7 +85,7 @@ load('./mcsk15_list.RData')
 # pt-SNE embedding
 m.list1 <- lapply(m.list, function(m.ppx) m.ppx[[1]])
 # pt-SNE+EFC.ppx
-m.list2 <- lapply(m.list, function(m.ppx) m.ppx[[2]])
+#m.list2 <- lapply(m.list, function(m.ppx) m.ppx[[2]])
 # pt-SNE+EFC.45
 m.list3 <- lapply(m.list, function(m.ppx) m.ppx[[3]])
 ```
@@ -96,11 +96,11 @@ m.list3 <- lapply(m.list, function(m.ppx) m.ppx[[3]])
 sapply(m.list1, function(m) m$ppx$ppx)
 ```
 
-### Embedding Cost/Size 
+<!-- ### Embedding Cost/Size -->
 
-```{r, out.width = '25%', fig.show = 'hold'}
-nulL <- lapply(m.list1, function(m) bdm.cost(m))
-```
+<!-- ```{r, out.width = '25%', fig.show = 'hold'} -->
+<!-- nulL <- lapply(m.list1, function(m) bdm.cost(m)) -->
+<!-- ``` -->
 
 ### Embedding
 
@@ -122,23 +122,23 @@ nulL <- lapply(m.list1, function(m) {
 })
 ```
 
-#### pt-SNE+EFR.ppx
+<!-- #### pt-SNE+EFR.ppx -->
 
-```{r, out.width = '25%', fig.show = 'hold'}
-nulL <- lapply(m.list2, function(m) {
-  m$lbls <- L
-  bdm.ptsne.plot(m, class.pltt = MACOSKO_COLORS1, ptsne.cex = 0.3)
-})
-```
+<!-- ```{r, out.width = '25%', fig.show = 'hold'} -->
+<!-- nulL <- lapply(m.list2, function(m) { -->
+<!--   m$lbls <- L -->
+<!--   bdm.ptsne.plot(m, class.pltt = MACOSKO_COLORS1, ptsne.cex = 0.3) -->
+<!-- }) -->
+<!-- ``` -->
 
-#### pt-SNE+EFR.45
+<!-- #### pt-SNE+EFR.45 -->
 
-```{r, out.width = '25%', fig.show = 'hold'}
-nulL <- lapply(m.list3, function(m) {
-  m$lbls <- L
-  bdm.ptsne.plot(m, class.pltt = MACOSKO_COLORS1, ptsne.cex = 0.3)
-})
-```
+<!-- ```{r, out.width = '25%', fig.show = 'hold'} -->
+<!-- nulL <- lapply(m.list3, function(m) { -->
+<!--   m$lbls <- L -->
+<!--   bdm.ptsne.plot(m, class.pltt = MACOSKO_COLORS1, ptsne.cex = 0.3) -->
+<!-- }) -->
+<!-- ``` -->
 
 <!-- ### Precision maps -->
 
@@ -186,51 +186,51 @@ m$lbls <- L
 bdm.ptsne.plot(m, class.pltt = MACOSKO_COLORS1, ptsne.cex = 0.3)
 ```
 
-#### pt-SNE+EFR.ppx
+<!-- #### pt-SNE+EFR.ppx -->
 
-```{r, }
-hlTable <- sapply(m.list2, function(m) summary(m$hlC)[4])
-hlTable <- matrix(hlTable, nrow = 1)
-colnames(hlTable) <- sapply(1:8, function(i) paste(m.list1[[i]]$ppx$ppx, '+', m.list2[[i]]$ppx$ppx))
-rownames(hlTable) <- c('<hlC>')
-knitr::kable(hlTable, caption = 'hl-Correlation') %>%
-  kable_styling(full_width = F)
-```
+<!-- ```{r, } -->
+<!-- hlTable <- sapply(m.list2, function(m) summary(m$hlC)[4]) -->
+<!-- hlTable <- matrix(hlTable, nrow = 1) -->
+<!-- colnames(hlTable) <- sapply(1:8, function(i) paste(m.list1[[i]]$ppx$ppx, '+', m.list2[[i]]$ppx$ppx)) -->
+<!-- rownames(hlTable) <- c('<hlC>') -->
+<!-- knitr::kable(hlTable, caption = 'hl-Correlation') %>% -->
+<!--   kable_styling(full_width = F) -->
+<!-- ``` -->
 
-#### pt-SNE+EFR.45
+<!-- #### pt-SNE+EFR.45 -->
 
-```{r, }
-hlTable <- sapply(m.list3, function(m) mean(m$hlC))
-hlTable <- matrix(round(hlTable, 4), nrow = 1)
-colnames(hlTable) <- sapply(1:8, function(i) paste(m.list1[[i]]$ppx$ppx, '+', m.list3[[i]]$ppx$ppx))
-rownames(hlTable) <- c('<hlC>')
-knitr::kable(hlTable, caption = 'hl-Correlation') %>%
-  kable_styling(full_width = F)
-```
+<!-- ```{r, } -->
+<!-- hlTable <- sapply(m.list3, function(m) mean(m$hlC)) -->
+<!-- hlTable <- matrix(round(hlTable, 4), nrow = 1) -->
+<!-- colnames(hlTable) <- sapply(1:8, function(i) paste(m.list1[[i]]$ppx$ppx, '+', m.list3[[i]]$ppx$ppx)) -->
+<!-- rownames(hlTable) <- c('<hlC>') -->
+<!-- knitr::kable(hlTable, caption = 'hl-Correlation') %>% -->
+<!--   kable_styling(full_width = F) -->
+<!-- ``` -->
 
 ### Kary-neighborhood preservation
 
 ```{r, out.width = '50%', fig.show = 'hold'}
 bdm.knp.plot(m.list1)
-bdm.knp.plot(m.list2)
-bdm.knp.plot(m.list3)
+#bdm.knp.plot(m.list2)
+#bdm.knp.plot(m.list3)
 ```
 
-#### pt-SNE vs. pt-SNE+EFR.ppx
+<!-- #### pt-SNE vs. pt-SNE+EFR.ppx -->
 
-```{r, out.width = '25%', fig.show = 'hold'}
-nulL <- lapply(1:8, function(i) {
-  bdm.knp.plot(list(m.list1[[i]], m.list2[[i]]))
-})
-```
+<!-- ```{r, out.width = '25%', fig.show = 'hold'} -->
+<!-- nulL <- lapply(1:8, function(i) { -->
+<!--   bdm.knp.plot(list(m.list1[[i]], m.list2[[i]])) -->
+<!-- }) -->
+<!-- ``` -->
 
-#### pt-SNE vs. pt-SNE+EFR.45
+<!-- #### pt-SNE vs. pt-SNE+EFR.45 -->
 
-```{r, out.width = '25%', fig.show = 'hold'}
-nulL <- lapply(1:8, function(i) {
-  bdm.knp.plot(list(m.list1[[i]], m.list3[[i]]))
-})
-```
+<!-- ```{r, out.width = '25%', fig.show = 'hold'} -->
+<!-- nulL <- lapply(1:8, function(i) { -->
+<!--   bdm.knp.plot(list(m.list1[[i]], m.list3[[i]])) -->
+<!-- }) -->
+<!-- ``` -->
 
 ### Running Times
 

@@ -65,7 +65,7 @@ mpi.cl <- bdm.mpi.start(threads)
 if (is.null(mpi.cl)) return()
 
 # +++ range of perplexities
-ppx.list <- c(5000, 10000, 25000, 50000)
+ppx.list <- c(500, 5000, 50000, 100000)
 
 # +++ run init (compute betas)
 m <- bdm.init(P1M, dSet.name = 'P1M', is.sparse = T, ppx = ppx.list, threads = 101, mpi.cl = mpi.cl)
@@ -105,15 +105,15 @@ load('./P1M_ptsne.RData')
 ### Output
 
 ```{r, out.width = '50%', fig.show = 'hold'}
-#nulL <- lapply(m.list, function(m) primes.plot(P1M, m))
+nulL <- lapply(m.list, function(m) primes.plot(P1M, m))
 ```
 
 ### hl-Correlation
 
-```{r, eval = F}
-hlTable <- sapply(m.list, function(m) summary(m$hlC)[4])
+```{r, }
+hlTable <- sapply(m.list[c(1,3,4)], function(m) summary(m$hlC)[4])
 hlTable <- matrix(round(hlTable, 4), nrow = 1)
-colnames(hlTable) <- sapply(m.list, function(m) m$ppx$ppx)
+colnames(hlTable) <- sapply(m.list[c(1,3,4)], function(m) m$ppx$ppx)
 rownames(hlTable) <- c('<hlC>')
 knitr::kable(hlTable, caption = 'hl-Correlation') %>%
   kable_styling(full_width = F)
@@ -122,7 +122,7 @@ knitr::kable(hlTable, caption = 'hl-Correlation') %>%
 ### k-ary neighborhood preservation
 
 ```{r, }
-#bdm.knp.plot(m.list, ppxfrmt = 0)
+bdm.knp.plot(m.list, ppxfrmt = 0)
 ```
 
 ### Running Times

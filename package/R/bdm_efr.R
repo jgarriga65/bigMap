@@ -51,7 +51,7 @@ zQ.exp <- function(cl, threads)
 # ... macosko15 	44808			0.0		MPI		20	4	100		9.26 5.36 3.29
 # ... macosko15 	44808			0.0		SCKT	10	4	111		0.05 1.12 1.50
 # ... P1G			1000000	500		0.33	SCKT	15	8	111		0.13 2.68 6.15
-# ... P1G			1000000	50		0.33	SCKT	15	8	111		0.09 2.68 3.25 
+# ... P1G			1000000	50		0.33	SCKT	15	8	111		0.09 2.68 3.25
 # --------------------------------------------------------------------------------
 
 bdm.efr <- function(dSet.data, m.list, ppx = ppx, iters = 100, lRate = NULL, theta = .0, exgg = 1, threads = 4, mpi.cl = NULL)
@@ -64,16 +64,18 @@ bdm.efr <- function(dSet.data, m.list, ppx = ppx, iters = 100, lRate = NULL, the
 		Xdata.exp(cl, dSet.data, m$is.distance, m$is.sparse, m$normalize)
 	}
 	# +++ compute/export betas
+	# Att!! xppx is always 3 here !!!
 	if (class(ppx) == 'list') {
 		m$ppx <- ppx
+		m$ppx$xppx <- 3
 	}
 	else if (ppx != m$ppx$ppx) {
-		m$ppx <- beta.get(cl, ppx, m$ppx$xppx)
+		m$ppx <- beta.get(cl, ppx, 3)
 	}
 	Xbeta.exp(cl, m$ppx$B)
 	# +++ define thread chunks
+	# Att!! nnSize refers here to the whole dataset, thus max is (nX -1)
 	nX <- m$nX
-	# Att!! nnSize refers here to the whole dataset
 	nnSize <- min((m$ppx$ppx *m$ppx$xppx), (nX -1))
 	clusterExport(cl, c('nX', 'nnSize'), envir = environment())
 	clusterCall(cl, thread.chunk)
