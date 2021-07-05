@@ -60,6 +60,7 @@ bdm.efr <- function(dSet.data, m.list, ppx = ppx, iters = 100, lRate = NULL, the
 	# +++ start cluster
 	cl <- cluster.start(threads, mpi.cl)
 	# +++ export input data (if using mpi.cl it might have been already exported)
+	cat('+++ exporting data \n')
 	if (is.null(mpi.cl) || !is.null(dSet.data)) {
 		Xdata.exp(cl, dSet.data, m$is.distance, m$is.sparse, m$normalize)
 	}
@@ -72,6 +73,7 @@ bdm.efr <- function(dSet.data, m.list, ppx = ppx, iters = 100, lRate = NULL, the
 	else if (ppx != m$ppx$ppx) {
 		m$ppx <- beta.get(cl, ppx, 3)
 	}
+	cat('+++ exporting fR-betas \n')
 	Xbeta.exp(cl, m$ppx$B)
 	# +++ define thread chunks
 	# Att!! nnSize refers here to the whole dataset, thus max is (nX -1)
@@ -91,7 +93,7 @@ bdm.efr <- function(dSet.data, m.list, ppx = ppx, iters = 100, lRate = NULL, the
 	# +++ ptSNE parameters
 	if (is.null(lRate)) lRate <- nX /16
 	clusterExport(cl, c('lRate', 'theta'), envir = environment())
-	# +++ embedding final compression
+	# +++ local refinement
 	# m$progress <- list()
 	m$t$efr <- system.time({
 		# +++ output affinities (Q) normalization
