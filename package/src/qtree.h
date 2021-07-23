@@ -136,13 +136,17 @@ public:
 	double minNodeSize;         // node minimum size
 								// (avoid indefinite expansion in case of duplicates)
 
+	double delta; 				// pt-SNE approximation factor (theta)
+
 public:
 
 	Quadtree();
-	Quadtree(double* M, size_t rows, size_t cols) {
+	Quadtree(double* M, size_t rows, size_t cols, double theta) {
 
 		n = rows;
 		m = cols;
+		delta = theta;
+
 		double minx = .0, miny = .0, maxx = .0, maxy = .0;
 		for (size_t i = 0; i < n; i++) {
 			minx = std::min(minx, M[i *m +0]);
@@ -191,18 +195,18 @@ public:
 		node->updM(q);
 	};
 
-	void repForces(double* Y, double* qForce, double delta, double* Q) const {
+	void repForces(double* Y, double* qForce, double* Q) const {
 		for (size_t i = 0; i < n; i++) {
 			Point q = {Y[i *m +0], Y[i *m +1]};
-			repForce(q, root, delta, qForce +i *m, Q);
+			repForce(q, root, qForce +i *m, Q);
 		}
 	};
 
-	void repF(double* Y, double* qForce, double delta, double* Q, size_t i) const {
+	void repF(double* Y, double* qForce, double* Q, size_t i) const {
 		Point q = {Y[i *m +0], Y[i *m +1]};
 		qForce[0] = .0;
 		qForce[1] = .0;
-		repForce(q, root, delta, qForce, Q);
+		repForce(q, root, qForce, Q);
 	};
 
 private:
@@ -222,26 +226,26 @@ private:
 		}
 	};
 
-	void repForce(Point q, Node* node, double delta, double qForce[], double* Q) const {
+	void repForce(Point q, Node* node, double qForce[], double* Q) const {
 		for (size_t k = 0; k < 4; k++) {
 			if (node->child[k]->Np > 0) {
 				if (node->child[k]->child.empty()) {
 					// child-node is leaf
 					// (Att.!! can hold more than one single point if at treeMaxDepth)
 					addForce(q, node->child[k]->m, node->child[k]->Np, qForce, Q);
-				} else if (node->child[k]->prune(q, delta)) {
+				} else if (node->child[k]->prune(q, this ->delta)) {
 					// branch can be prunned: approximate repForce by its mass-center
 					addForce(q, node->child[k]->m, node->child[k]->Np, qForce, Q);
 				} else {
 					// branch can not be prunned: explore branch deeper
-					repForce(q, node->child[k], delta, qForce, Q);
+					repForce(q, node->child[k], qForce, Q);
 				}
 			}
 		}
 	};
 
 	void addForce(Point q, Point p, int Np, double qForce[], double* Q) const {
-		double Qqp = 1 /(1 + sqDist(p, q));
+		double Qqp = 1 /(1 + sqDist(q, p));
 		qForce[0] += Qqp *Qqp *(q.x - p.x) *Np;
 		qForce[1] += Qqp *Qqp *(q.y - p.y) *Np;
 		// update Q-normalization factor

@@ -91,6 +91,7 @@ bdm.init <- function(dSet.data, dSet.name = NULL, is.distance = F, is.sparse = F
 		dimX <- Xdata.dim(cl)
 		bdm$nX <- dimX[1]
 		bdm$mX <- dimX[2]
+		xppx <- max(3, xppx)
 		# compute betas
 		if (length(ppx) == 1) {
 			bdm$ppx <- list(beta.get(cl, ppx, xppx = xppx))
@@ -265,9 +266,9 @@ bdm.ptsne <- function(data, bdm, lRate = NULL, theta = 0.0, alpha = 0.5, Y.init 
 		cat('+++ WARNING: layers set to ', threads, ' !!\n', sep='')
 		layers <- threads
 	}
-	if (is.null(lRate)) {
-		lRate <- (bdm$nX *layers /threads) /16
-	}
+	# if (is.null(lRate)) {
+	# 	lRate <- (bdm$nX *layers /threads) /20
+	# }
 	if (theta > 0.0 && theta < 0.33) {
 		cat('+++ WARNING: theta set to ', 0.0, ' !!\n', sep='')
 		theta <- 0.0
@@ -288,7 +289,7 @@ bdm.ptsne <- function(data, bdm, lRate = NULL, theta = 0.0, alpha = 0.5, Y.init 
 		print(bdm$t$dataExport)
 	}
 	#
-	bdm$ptsne <- list(threads = threads, layers = layers, rounds = rounds, lRate = lRate, theta = theta, alpha = alpha, Y = Y.init, useEx = 1.0)
+	bdm$ptsne <- list(threads = threads, layers = layers, rounds = rounds, lRate = lRate, theta = theta, alpha = alpha, Y = Y.init, exgg = 1.0)
 	#
 	bdm <- ptsne.get(cl, bdm, info)
 	if (length(bdm) == 1) bdm <- bdm[[1]]

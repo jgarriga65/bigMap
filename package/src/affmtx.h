@@ -24,14 +24,13 @@ public:
 
 	// t-SNE input/ouput matrix size
 	unsigned int z, w, nX, mX, nnSize;
-	double latEx;
 	int* zIdx;
 	double* X;
 	double* B;
 	double zP;
 
 	// constructor
-	affMtx(SEXP sexpX, SEXP sexpB, int* zIdx, unsigned int z, unsigned int nnSize, double latEx);
+	affMtx(SEXP sexpX, SEXP sexpB, int* zIdx, unsigned int z, unsigned int nnSize);
 	// destructor
 	~affMtx() {
 		zIdx = NULL;
@@ -42,15 +41,15 @@ public:
 	// exaggeration factor
 	void exgg(double* E);
 	// transform input similarities into unnormalized probabilities from INPUT-DATA
-	void X2P(double* P, int* W);
+	void X2P(double* P, unsigned int* W);
 	// transform input similarities into unnormalized probabilities from DISTANCES Triangular-Matrix
-	void D2P(double* P, int* W);
+	void D2P(double* P, unsigned int* W);
 	// transform input similarities into unnormalized probabilities from SPARSE-DATA
-	void S2P(double* P, int* W);
+	void S2P(double* P, unsigned int* W);
 	// versions for enbedding final compression
-	void efr_X2P(unsigned int z_ini, unsigned int z_end, double* P, int* W);
-	void efr_D2P(unsigned int z_ini, unsigned int z_end, double* P, int* W);
-	void efr_S2P(unsigned int z_ini, unsigned int z_end, double* P, int* W);
+	void efr_X2P(unsigned int z_ini, unsigned int z_end, double* P, unsigned int* W);
+	void efr_D2P(unsigned int z_ini, unsigned int z_end, double* P, unsigned int* W);
+	void efr_S2P(unsigned int z_ini, unsigned int z_end, double* P, unsigned int* W);
 
 };
 

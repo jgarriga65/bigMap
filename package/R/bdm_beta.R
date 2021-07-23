@@ -29,7 +29,7 @@ beta.get <- function(cl, ppx, xppx = 3.0)
 		# export parameters
 		clusterExport(cl, c('ppx', 'xppx'), envir=environment())
 		# get perplexity-based local betas by chunks
-		B <- matrix(unlist(clusterCall(cl, thread.beta)), ncol = 4, byrow = T)
+		B <- matrix(unlist(clusterCall(cl, thread.beta)), ncol = 3, byrow = T)
 		print(summary(B[, 1]))
 	})
 	print(t)

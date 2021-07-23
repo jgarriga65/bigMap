@@ -21,26 +21,23 @@
 #include "qtree.h"
 #include "tsne.h"
 
-// ony for X2P dgemm_ version !!
-// extern "C" {
-//     #include <R_ext/BLAS.h>
-// }
-
 using namespace std;
 
 // t-SNE constructor
-TSNE::TSNE(unsigned int z, unsigned int w, unsigned int mY, double* eRange, int max_iter, double lRate, double theta, double alpha, double zP, double* exgg) : z(z), w(w), mY(mY), eRange(eRange), max_iter(max_iter), lRate(lRate), theta(theta), alpha(alpha), zP(zP), exgg(exgg)
+TSNE::TSNE(unsigned int z, unsigned int w, unsigned int mY, double* eRange, int max_iter, double lRate, double theta, double alpha, double zP, double exgg, int nnSize) : z(z), w(w), mY(mY), eRange(eRange), max_iter(max_iter), lRate(lRate), theta(theta), alpha(alpha), zP(zP), exgg(exgg), nnSize(nnSize)
 {
 	// set current value for learning rate
-	std::vector<double> eta (mY, 0);
-	for (unsigned int d = 0; d < mY; d++) eta[d] = lRate *4.0;
-	this ->eta = eta;
+	this ->eta = 0;
+	for (unsigned int d = 0; d < mY; d++) {
+		this ->eta += std::pow(eRange[d *mY +1] -eRange[d *mY +0], 2);
+	}
+	this ->eta = std::sqrt(this ->eta) *std::log2(z *nnSize) *4.0;
+	this ->minL = DBL_EPSILON /4.0; // DBL_EPSILON = 1.0e-9 (DBL_MIN = 1.0e-37)
 }
 
 // Perform t-SNE (only for 2D embedding !!)
-void TSNE::run2D(double* P, int* W, double* Y)
+void TSNE::run2D(double* P, unsigned int* W, double* Y)
 {
-	// +++ Allocate memory
 	// . gradient forces
 	double* atrF = (double*) calloc(z *mY, sizeof(double));
 	double* repF = (double*) calloc(z *mY, sizeof(double));
@@ -58,7 +55,7 @@ void TSNE::run2D(double* P, int* W, double* Y)
 		for (unsigned int i = 0, k = 0; i < z; i++){
 			for (unsigned int d = 0; d < mY; d++, k++){
 				// update embedding position
-				uY[k] = alpha *uY[k] -eta[d] *(exgg[i] *atrF[k] /zP -repF[k] /zQ);
+				uY[k] = alpha *uY[k] -eta *(exgg *atrF[k] /zP -repF[k] /zQ);
 				Y[k] += uY[k];
 				// reset attractive/repulsive forces
 				atrF[k] = .0;
@@ -66,9 +63,13 @@ void TSNE::run2D(double* P, int* W, double* Y)
 			}
 		}
 	}
-	// eRange is used to compute the embedding size (i.e. pooled from the master)
+	// eRange is used to compute the embedding size (i.e. pulled from the master)
 	// if not used to compute the learning-rate
 	// there is no need to push it from the master (remove pushing in bdm_ptsne.R !!)
+	for (unsigned int d = 0; d < mY; d++){
+		eRange[d *mY +0] = .0;
+		eRange[d *mY +1] = .0;
+	}
 	for (unsigned int i = 0, k = 0; i < z; i++){
 		for (unsigned int d = 0; d < mY; d++, k++){
 			if (Y[k] < eRange[d *mY +0]) eRange[d *mY +0] = Y[k];
@@ -92,18 +93,20 @@ double TSNE::exact_Gradient(double* P, double* Y, double* atrF, double* repF)
 			double Lij = 1.0;
 			for(unsigned int d = 0; d < mY; d++) {
 				L[d] = Y[i *mY +d] -Y[j *mY +d];
+				// if (std::abs(L[d]) < minL) {
+				// 	L[d] = (Y[i *mY +d] >Y[j *mY +d]) ? minL : -minL;
+				// }
 				Lij += L[d] *L[d];
 			}
 			double Qij = 1.0 /Lij;
 			for(unsigned int d = 0; d < mY; d++) {
+				double Qd = Qij *L[d];
 				if (P[ij] > 0) {
-					double Aij = P[ij] *Qij *L[d];
-					atrF[i *mY +d] += Aij;
-					atrF[j *mY +d] -= Aij;
+					atrF[i *mY +d] += P[ij] *Qd;
+					atrF[j *mY +d] -= P[ij] *Qd;
 				}
-				double Rij = Qij *Qij *L[d];
-				repF[i *mY +d] += Rij;
-				repF[j *mY +d] -= Rij;
+				repF[i *mY +d] += Qij *Qd;
+				repF[j *mY +d] -= Qij *Qd;
 			}
 			zQ += Qij;
 		}
@@ -113,29 +116,58 @@ double TSNE::exact_Gradient(double* P, double* Y, double* atrF, double* repF)
 }
 
 // Compute gradient forces of the t-SNE cost function (APPRX)
-double TSNE::apprx_Gradient(double* P, int* W, double* Y, double* atrF, double* repF)
+double TSNE::apprx_Gradient(double* P, unsigned int* W, double* Y, double* atrF, double* repF)
 {
 	// compute attractive forces
 	double L [mY];
-	for(unsigned int k = 0; k < w; k++) {
-		unsigned int i = W[k] /z;
-		unsigned int j = (int) W[k] %z;
-		double Lij = 1.0;
-		for(unsigned int d = 0; d < mY; d++){
-			L[d] = Y[i *mY +d] - Y[j *mY +d];
-			Lij +=  L[d] *L[d];
-		}
-		unsigned int ij = ijIdx(z, i, j);
-		for(unsigned int d = 0; d < mY; d++) {
-			double Aij = P[ij] *L[d] /Lij;
-			atrF[i *mY +d] += Aij;
-			atrF[j *mY +d] -= Aij;
+
+	if (w < z) {
+		// this is slower only if w << z
+		for(unsigned int k = 0; k < w; k++) {
+			unsigned int i = W[k] /z;
+			unsigned int j = (unsigned int) W[k] %z;
+			double Lij = 1.0;
+			for(unsigned int d = 0; d < mY; d++){
+				L[d] = Y[i *mY +d] - Y[j *mY +d];
+				// if (std::abs(L[d]) < minL) {
+				// 	L[d] = (Y[i *mY +d] >Y[j *mY +d]) ? minL : -minL;
+				// }
+				Lij +=  L[d] *L[d];
+			}
+			unsigned int ij = ijIdx(z, i, j);
+			for(unsigned int d = 0; d < mY; d++) {
+				atrF[i *mY +d] += P[ij] *L[d] /Lij;
+				atrF[j *mY +d] -= P[ij] *L[d] /Lij;
+			}
 		}
 	}
+	else {
+		// otherwise (high perplexities) this is faster
+		for(unsigned int i = 0, ij = 0; i < z; i++) {
+			for (unsigned int j = i +1; j < z; j++, ij++) {
+				if (P[ij] > 0) {
+					double Lij = 1.0;
+					for(unsigned int d = 0; d < mY; d++) {
+						L[d] = Y[i *mY +d] -Y[j *mY +d];
+						if (std::abs(L[d]) < minL) {
+							L[d] = (Y[i *mY +d] >Y[j *mY +d]) ? minL : -minL;
+						}
+						Lij += L[d] *L[d];
+					}
+					for(unsigned int d = 0; d < mY; d++) {
+						double Qd = L[d] /Lij;
+						atrF[i *mY +d] += P[ij] *Qd;
+						atrF[j *mY +d] -= P[ij] *Qd;
+					}
+				}
+			}
+		}
+	}
+
 	// compute repulsive forces
 	double zQ = .0;
-	Quadtree* qtree = new Quadtree(Y, z, mY);
-	qtree->repForces(Y, repF, theta, &zQ);
+	Quadtree* qtree = new Quadtree(Y, z, mY, theta);
+	qtree->repForces(Y, repF, &zQ);
 	delete qtree;
 	//
 	return zQ;

@@ -36,9 +36,9 @@ Rcpp::NumericVector nnSS_chk(SEXP sexpX, SEXP sexpB, arma::Col<int> indexes, boo
 	unsigned int aff_size = thread_size *(thread_size -1) /2;
 	double* thread_P = (double*) calloc(aff_size, sizeof(double));
 	// . indexes of data-point pairs with significant atractive forces
-	int* thread_W = (int*) calloc(aff_size, sizeof(int));
+	unsigned int* thread_W = (unsigned int*) calloc(aff_size, sizeof(unsigned int));
 	// . affinity matrix
-	affMtx* affmtx = new affMtx(sexpX, sexpB, zIdx, thread_size, nnSize, 1.0);
+	affMtx* affmtx = new affMtx(sexpX, sexpB, zIdx, thread_size, nnSize);
 	if (isDistance)
 		affmtx ->D2P(thread_P, thread_W);
 	else if (isSparse)
@@ -48,10 +48,9 @@ Rcpp::NumericVector nnSS_chk(SEXP sexpX, SEXP sexpB, arma::Col<int> indexes, boo
 	// . neighbors' set size
 	Rcpp::NumericVector thread_nnSS(thread_size);
 	thread_nnSS.fill(0);
-	for (unsigned int i = 0; i < thread_size; i++) {
-		for (unsigned int j = i +1; j < thread_size; j++) {
-			unsigned int ij = ijIdx(thread_size, i, j);
-			if (thread_P[ijIdx(thread_size, i, j)] > 0) {
+	for (unsigned int i = 0, ij = 0; i < thread_size; i++) {
+		for (unsigned int j = i +1; j < thread_size; j++, ij++) {
+			if (thread_P[ij] > 0) {
 				thread_nnSS[i] ++;
 				thread_nnSS[j] ++;
 			}

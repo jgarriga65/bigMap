@@ -29,6 +29,7 @@ bdm.mpi.start <- function(threads)
 	}
 	else
 	{
+		cat('+++ starting ', threads, ' threads \n', sep = '')
 		# cluster structure
 		cl.ranks <- unlist(clusterEvalQ(cl, thread.rank <- Rmpi::mpi.comm.rank(comm = 0)))
 		cl.nodes <- unlist(clusterEvalQ(cl, thread.node <- Rmpi::mpi.get.processor.name()))
@@ -52,7 +53,6 @@ bdm.mpi.export <- function(cl, X, is.distance = F, is.sparse = F, normalize = T)
 
 cluster.start <- function(threads, mpi.cl = NULL, verbose = T)
 {
-	if (verbose) cat('+++ starting ', threads, ' threads \n', sep = '')
 	cl <- NULL
 	if (!is.null(mpi.cl))
 	{
@@ -60,6 +60,7 @@ cluster.start <- function(threads, mpi.cl = NULL, verbose = T)
 	}
 	else
 	{
+		if (verbose) cat('+++ starting ', threads, ' threads \n', sep = '')
 		cl <- makeCluster(threads +1, type = 'PSOCK')
 		# cluster structure
 		clusterApply(cl, seq_along(cl), function(i) thread.rank <<- i -1)

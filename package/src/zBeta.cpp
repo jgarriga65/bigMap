@@ -17,73 +17,149 @@
 #include <algorithm>
 
 #include "sqdist.h"
-#include "lambertW.h"
+//#include "lambertW.h"
 
 // using namespace arma;
 using namespace Rcpp;
 using namespace std;
 
-
-// entropy (up to 32.0/Bi or up to nnQ)
-double entropy(std::vector<double> Li, double Bi, double &Zi, int nnQ)
+// Center/Scale input-data matrix (avoids unclear numerical problems)
+// Expects input-data as a transposed big.matrix !!
+// [[Rcpp::export]]
+void centerScale(SEXP sexpX, bool is_distance, bool is_sparse)
 {
-	// Att!! Hi = \sum_j Pij/Pi log(Pij/Pi);
-	// where:
+	BigMatrix *bigX = reinterpret_cast <BigMatrix*> (R_ExternalPtrAddr(sexpX));
+	index_type offset = bigX ->nrow() *bigX ->col_offset();
+	double* X = reinterpret_cast <double*> (bigX ->matrix()) +offset;
+	unsigned int nX = bigX ->ncol();
+	unsigned int mX = bigX ->nrow();
+	// +++ Center
+	if (!is_distance)
+	{
+		std::vector<double> xMean(mX, 0);
+		// Att.!!! THIS MIGHT BE NECESSARY OUT OF THE PRIMES DATA SET
+		// if (is_sparse)
+		// {
+		// 	std::vector<double> xSize(mX, 0);
+		// 	for (unsigned int i = 0, ij = 1; i < nX; i++) {
+		// 		for (unsigned int j = 1; j < mX; j++, j++, ij++, ij++) {
+		// 			xMean[j] += X[ij];
+		// 			if (X[ij] > 0) xSize[j] ++;
+		// 		}
+		// 	}
+		// 	// for (unsigned int j = 1; j < mX; j++, j++) xMean[j] /= (double) nX;
+		// 	for (unsigned int j = 1; j < mX; j++, j++) xMean[j] /= xSize[j];
+		// 	// Subtract data mean
+		// 	for (unsigned int i = 0, ij = 1; i < nX; i++) {
+		// 		for (unsigned int j = 1; j < mX; j++, j++, ij++, ij++) X[ij] -= xMean[j];
+		// 	}
+		// }
+		// else
+		if (!is_sparse)
+		{
+			for (unsigned int i = 0, ij = 0; i < nX; i++) {
+				for (unsigned int j = 0; j < mX; j++, ij++) xMean[j] += X[ij];
+			}
+			for (unsigned int j = 0; j < mX; j++) xMean[j] /= (double) nX;
+			// Subtract data mean
+			for (unsigned int i = 0, ij = 0; i < nX; i++) {
+				for (unsigned int j = 0; j < mX; j++, ij++) X[ij] -= xMean[j];
+			}
+		}
+	}
+	// +++ Scale
+	double Xmax = .0;
+	if (is_sparse)
+	{
+		for (unsigned int ij = 1; ij < nX *mX; ij++, ij++) if (std::abs(X[ij]) > Xmax) Xmax = std::abs(X[ij]);
+		for (unsigned int ij = 1; ij < nX *mX; ij++, ij++) X[ij] /= Xmax;
+	}
+	else
+	{
+		for (unsigned int ij = 0; ij < nX *mX; ij++) if (std::abs(X[ij]) > Xmax) Xmax = std::abs(X[ij]);
+		for (unsigned int ij = 0; ij < nX *mX; ij++) X[ij] /= Xmax;
+	}
+	// +++ free memory
+	bigX = NULL; X = NULL;
+}
+
+// entropy (up to qNN) (~ FIt-SNE version)
+// Zi = 0 is not more a problem and Bi are almost identical to Fit-SNE (!!)
+double entropy_1(std::vector<double> Li, double Bi, double &Zi, int qNN)
+{
+	// Att!! Hi = \sum_j Pij/Pi log(Pij/Pi); (no negative sign !!)
+	// because:
+	// Pij = exp(-Bi *Lij)
+	// log(Pij) = -Bi *Lij (note the sign !!!)
+	Zi = DBL_MIN;	// this setting along with (*) avoids Zi = 0;
+	double Hi = .0;
+	// +++ entropy (up to qNN)
+	for (unsigned int j = 0; j < qNN; j++) {
+		double Kij = std::exp(-Bi *Li[j]);
+		if (Li[j] == 0) Kij = DBL_MIN;	// (*)
+		Zi += Kij;
+		Hi += Li[j] *Kij;
+	}
+	Hi *= Bi /Zi;
+	Hi += std::log(Zi);
+	return Hi;
+}
+
+// entropy (up to qNN) (my version)
+double entropy(std::vector<double> Li, double Bi, double &Zi, int qNN)
+{
+	// Att!! Hi = \sum_j Pij/Pi log(Pij/Pi); (no negative sign !!)
+	// because:
 	// Pij = exp(-Bi *Lij)
 	// log(Pij) = -Bi *Lij (note the sign !!!)
 	Zi = -1.0;
 	double Hi = .0;
-	// // entropy (up to 32.0/Bi)
-	// double maxL = 32.0 /Bi;
-	// for (unsigned int j = 0; j < Li.size(); j++) {
-	// 	if (Li[j] <= maxL) {
-	// 		double Kij = std::exp(-Bi *Li[j]);
-	// 		Zi += Kij;
-	// 		Hi += Li[j] *Kij;
-	// 	}
-	// }
-	// entropy (up to nnQ)
-	for (unsigned int j = 0; j < nnQ; j++) {
+	// +++ entropy (up to qNN)
+	for (unsigned int j = 0; j < qNN; j++) {
 		double Kij = std::exp(-Bi *Li[j]);
 		Zi += Kij;
 		Hi += Li[j] *Kij;
 	}
-	// Att!! Two problems may arise that cause Zi = 0:
-	// 1. datapoints for which the starting value Bi = 1 is too large
-	// (i.e, distances to all neighbors are greater than 32.0/Bi)
-	// 2. datapoints with many nearest neighbours at the same distance for which,
-	// increasing Bi suddenly places them all out of the neighborhood
-	// In any case, Hi = 0 and Bi is decreased in the next step.
-	if (Zi > 0) {
+	// Att!! Two problems may arise that cause Zi -> 0:
+	// 1. outliers for which the starting value Bi = 1 is already too large
+	// 2. for large Bi and largest values of Li[j], Kij might vanish and so Zi
+	// 3. all qNN neighbours at the same distance makes Bi increase untill
+	// they all fall out of the neighborhood making Zi = 0
+	if (Zi > qNN *1e-12) {
 		Hi *= Bi /Zi;
 		Hi += std::log(Zi);
+	}
+	// In any case, Hi = 0 --> diff > 0 --> Bi is decreased
+	else {
+		Hi = 0;
 	}
 	return Hi;
 }
 
 // compute chunk of Betas
 // [[Rcpp::export]]
-Rcpp::NumericMatrix zBeta(unsigned int thread_rank, unsigned int threads, SEXP sexpX, bool is_distance, bool is_sparse, unsigned int ppx, double xppx)
+Rcpp::NumericMatrix zBeta(int thread_rank, int threads, SEXP sexpX, bool is_distance, bool is_sparse, int ppx, double xppx)
 {
 	// input data
 	sqDist* sqDistX = new sqDist(sexpX);
 	// get chunk breaks
 	std::vector<int> breaks (threads +1, 0);
-	for (unsigned int b = 0; b < threads; b++) breaks[b] = (int) b *(sqDistX ->nX +1.0) /threads;
+	for (unsigned int b = 0; b < threads; b++) {
+		breaks[b] = (int) b *(sqDistX ->nX +1.0) /threads;
+	}
 	breaks[threads] = sqDistX ->nX;
 	// output data (chunk of Betas and theta-quantiles)
-	unsigned int chunk_size = breaks[thread_rank] - breaks[thread_rank -1];
-	Rcpp::NumericMatrix Beta(4, chunk_size);
+	int chunk_size = breaks[thread_rank] - breaks[thread_rank -1];
+	Rcpp::NumericMatrix Beta(3, chunk_size);
 	// parameters
 	double logppx = std::log(ppx);
-	double ppxtol = std::log(1 /.99999);
-	int nnQ = std::min((int) (xppx *ppx +1), (int) (sqDistX ->nX -1));
-	double stdppx = std::pow((std::log(std::sqrt(6.28318530718)) -logppx), 2.0);
-	double sq3ppx = std::pow(3.0 *ppx, 2.0);
+	double ppxtol = std::log(1.0 /.99999);
+	// quantile 3*ppx (L_max to compute Beta_i)
+	int q3p = std::min((int) (3 *ppx +1), (int) (sqDistX ->nX -1));
+	// quantile xppx*ppx (L_max to limit the NN set)
+	int qNN = std::min((int) (xppx *ppx +1), (int) (sqDistX ->nX -1));
 	//
-	for (unsigned int i = breaks[thread_rank -1]; i < breaks[thread_rank]; i++) {
-		// chunk-index
-		unsigned int l = i -breaks[thread_rank -1];
+	for (unsigned int i = breaks[thread_rank -1], l = 0; i < breaks[thread_rank]; i++, l++) {
 		// squared distances
 		std::vector<double> Li(sqDistX ->nX);
 		if (is_sparse) {
@@ -96,20 +172,17 @@ Rcpp::NumericMatrix zBeta(unsigned int thread_rank, unsigned int threads, SEXP s
 			sqDistX ->row_d1Dist(i, Li.data());
 		}
 		// nearest-neighbor quantile
-		std::nth_element(Li.begin(), Li.begin() +nnQ, Li.end());
-		double nnQBeta = stdppx /Li[nnQ];
+		std::nth_element(Li.begin(), Li.begin() +qNN, Li.end());
 		// compute Beta
 		double Bi = 1.0, minBeta = 0, maxBeta = DBL_MAX;
 		double Zi;
 		for (unsigned int iter = 0; iter < 100; iter++) {
-			if (Bi > nnQBeta) {
-				Bi = -1.0 /(2.0 *Li[nnQ]) *lambertWm1_CS(-(6.28318530718 *Li[nnQ]) /sq3ppx);
-				// Bi = nnQBeta;
-				entropy(Li, Bi, Zi, nnQ);
-				break;
-			}
 			// compute log-perplexity for current Beta
-			double diff = logppx -entropy(Li, Bi, Zi, nnQ);
+			double diff = logppx -entropy(Li, Bi, Zi, qNN);
+			// double Hi = entropy(Li, Bi, Zi, qNN);
+			// double diff = logppx -Hi;
+			// double Ppx = exp(-Bi *Li[ppx]);
+			// printf("+++ %3d, %6.4e %6.4e %6.4e, %6.4e %6.4e %6.4e \n", i, Bi, Zi, Hi, Li[qNN+50], Ppx, Ppx /Zi);
 			// check tolerance
 			if (std::abs(diff) < ppxtol) break;
 			// adjust Beta
@@ -123,24 +196,39 @@ Rcpp::NumericMatrix zBeta(unsigned int thread_rank, unsigned int threads, SEXP s
 				Bi = (Bi +minBeta) /2.0;
 			}
 		}
+		// printf("+++ %3d, %6.4e \n", i, Bi);
 		// precision
 		Beta(0, l) = Bi;
-		// conditional affinity normalization factor
-		// I can drop the 1/n factor because affinities are renormalized
+		// conditional affinity normalization factor (compute up to qNN)
+		// std::nth_element(Li.begin(), Li.begin() +qNN, Li.end());
+		// entropy(Li, Bi, Zi, qNN);
+		// I drop the 1/n factor because affinities are renormalized
 		// by thread (by factor zP) when attractive forces are computed
-		// Beta(1, l) = Zi *2.0 *sqDistX ->nX;
 		Beta(1, l) = Zi *2.0;
 		// nearest-neighbor quantile
-		Beta(2, l) = Li[nnQ];
-		// exaggeration factor
-		Beta(3, l) = 1.0;
-		// Beta(3, l) = 12.0;
-		// Beta(3, l) = 1.566555 /std::atan(4.5 /Bi);
-		// Beta(3, l) = 159.551211035 /(std::sqrt(Bi) *3.141592 *(1 +4.5 /Bi));
-		// Beta(3, l) = 159.335837 /(std:sqrt(Bi) *(1 + 4.5 /Bi) *(1.57079633 +std::atan(3 /std::sqrt(2 *Bi))));
+		Beta(2, l) = Li[qNN];
 	}
 	// free memory
 	delete sqDistX;
 	//
 	return Beta;
 }
+
+/*** R
+
+# Att!! After many checks with P1M, MNIST, S3D, Technosperm, Macosko15, ..
+# I find out the settings below seem to work well:
+# 1. Zi > qNN *1e-12	(this is the most definitive !!!)
+# 2. logppx = log(ppx)
+# 3. q3p = qNN = xppx *ppx (xppx = threads /layers)
+# 4. Bi = 1
+# 5. there is no point in center/scale the input data.
+
+check <- function(D, ppx = 100, threads = 100, thread_rank = 1, is.distance = F, is.sparse = F, xppx = 3)
+{
+	Xbm <- bigmemory::as.big.matrix(t(D), type = 'double')
+	# centerScale(Xbm@address, is.distance, is.sparse)
+	zBeta(thread_rank, threads, Xbm@address, is.distance, is.sparse, ppx, xppx)
+}
+
+*/

@@ -29,7 +29,7 @@
 using namespace Rcpp;
 
 // affMtx constructor
-affMtx::affMtx(SEXP sexpX, SEXP sexpB, int* zIdx, unsigned int z, unsigned int nnSize, double latEx) : zIdx(zIdx), z(z), nnSize(nnSize), latEx(latEx)
+affMtx::affMtx(SEXP sexpX, SEXP sexpB, int* zIdx, unsigned int z, unsigned int nnSize): zIdx(zIdx), z(z), nnSize(nnSize)
 {
 
 	// Att!! X and B transposed
@@ -54,34 +54,30 @@ affMtx::affMtx(SEXP sexpX, SEXP sexpB, int* zIdx, unsigned int z, unsigned int n
 	bigB = NULL;
 }
 
-// local exaggeration factor
-void affMtx::exgg(double* E)
-{
-	for (unsigned int i = 0; i < z; i++) E[i] = B[zIdx[i] *4 +3];
-}
-
 // transform input similarities into probabilities
 // FROM INPUT-DATA
-void affMtx::X2P(double* P, int* W)
+void affMtx::X2P(double* P, unsigned int* W)
 {
 	std::vector<int> nn(z, 0);
 	for (unsigned int i = 0, ij = 0; i < z; i++) {
 		unsigned int zi = zIdx[i];
 		double Xi[mX];
 		for(unsigned int v = 0; v < mX; v++) Xi[v] = X[zi *mX +v];
-		double Bi = B[zi *4 +0];
-		double Zi = B[zi *4 +1];
-		double Li = B[zi *4 +2];
+		double Bi = B[zi *3 +0];
+		double Zi = B[zi *3 +1];
+		double Li = B[zi *3 +2];
 		for (unsigned int j = i +1; j < z; j++, ij++) {
 			unsigned int zj = zIdx[j];
 			double Lij = .0;
 			for(unsigned int v = 0; v < mX; v++) Lij += pow(Xi[v] -X[zj *mX +v], 2);
-			double Bj = B[zj *4 +0];
-			double Zj = B[zj *4 +1];
-			double Lj = B[zj *4 +2];
-			if ((Lij <= Li) || (Lij <= Lj)) {
+			double Bj = B[zj *3 +0];
+			double Zj = B[zj *3 +1];
+			double Lj = B[zj *3 +2];
+			//
+			// P[ij] = DBL_MIN;
+			if (Lij <= (Li +Lj) /2.0) {
 				if ((nn[i] < nnSize) || (nn[j] < nnSize)) {
-					P[ij] += std::exp(-Bi *Lij) /Zi;
+					P[ij]  = std::exp(-Bi *Lij) /Zi;
 					P[ij] += std::exp(-Bj *Lij) /Zj;
 					zP += P[ij];
 					nn[i] ++;
@@ -90,28 +86,29 @@ void affMtx::X2P(double* P, int* W)
 					w ++;
 				}
 			}
+			// zP += P[ij];
 		}
 	}
-	zP *= 2.0 /latEx;
+	zP *= 2.0;
 }
 
 // transform input similarities into probabilities
 // FROM FULL-DISTANCE-MATRIX
-void affMtx::D2P(double* P, int* W)
+void affMtx::D2P(double* P, unsigned int* W)
 {
 	std::vector<int> nn(z, 0);
 	for (unsigned int i = 0, ij = 0; i < z; i++) {
 		unsigned int zi = zIdx[i];
-		double Bi = B[zi *4 +0];
-		double Zi = B[zi *4 +1];
-		double Li = B[zi *4 +2];
+		double Bi = B[zi *3 +0];
+		double Zi = B[zi *3 +1];
+		double Li = B[zi *3 +2];
 		for (unsigned int j = i +1; j < z; j++, ij++) {
 			unsigned int zj = zIdx[j];
 			double Lij = std::pow(X[zi *mX +zj], 2);
-			double Bj = B[zj *4 +0];
-			double Zj = B[zj *4 +1];
-			double Lj = B[zj *4 +2];
-			if ((Lij <= Li) || (Lij <= Lj)) {
+			double Bj = B[zj *3 +0];
+			double Zj = B[zj *3 +1];
+			double Lj = B[zj *3 +2];
+			if (Lij <= (Li +Lj) /2.0) {
 				if ((nn[i] < nnSize) || (nn[j] < nnSize)) {
 					P[ij] += std::exp(-Bi *Lij) /Zi;
 					P[ij] += std::exp(-Bj *Lij) /Zj;
@@ -124,30 +121,30 @@ void affMtx::D2P(double* P, int* W)
 			}
 		}
 	}
-	zP *= 2.0 /latEx;
+	zP *= 2.0;
 }
 
 // transform input euclidean-distances into probabilities
 // FROM SPARSE-MATRIX DATA
-void affMtx::S2P(double* P, int* W)
+void affMtx::S2P(double* P, unsigned int* W)
 {
 	std::vector<int> nn(z, 0);
 	for (unsigned int i = 0, ij = 0; i < z; i++) {
 		unsigned int zi = zIdx[i];
 		double Xi[mX];
 		for(unsigned int v = 0; v < mX; v++) Xi[v] = X[zi *mX +v];
-		double Bi = B[zi *4 +0];
-		double Zi = B[zi *4 +1];
-		double Li = B[zi *4 +2];
+		double Bi = B[zi *3 +0];
+		double Zi = B[zi *3 +1];
+		double Li = B[zi *3 +2];
 		for (unsigned int j = i +1; j < z; j++, ij++) {
 			unsigned int zj = zIdx[j];
 			double Xj[mX];
 			for(unsigned int v = 0; v < mX; v++) Xj[v] = X[zj *mX +v];
 			double Lij = spDist(mX, Xi, Xj);
-			double Bj = B[zj *4 +0];
-			double Zj = B[zj *4 +1];
-			double Lj = B[zj *4 +2];
-			if ((Lij <= Li) || (Lij <= Lj)) {
+			double Bj = B[zj *3 +0];
+			double Zj = B[zj *3 +1];
+			double Lj = B[zj *3 +2];
+			if (Lij <= (Li +Lj) /2.0) {
 				if ((nn[i] < nnSize) || (nn[j] < nnSize)) {
 					P[ij] += std::exp(-Bi *Lij) /Zi;
 					P[ij] += std::exp(-Bj *Lij) /Zj;
@@ -160,28 +157,28 @@ void affMtx::S2P(double* P, int* W)
 			}
 		}
 	}
-	zP *= 2.0 /latEx;
+	zP *= 2.0;
 }
 
 // +++++++++++++++++++++++++++++++++++ embedding final compression
 
 // transform input similarities into probabilities
 // FROM INPUT-DATA
-void affMtx::efr_X2P(unsigned int z_ini, unsigned int z_end, double* P, int* W)
+void affMtx::efr_X2P(unsigned int z_ini, unsigned int z_end, double* P, unsigned int* W)
 {
 	for (unsigned int zi = z_ini, i = 0; zi < z_end; zi++, i++) {
 		double Xi[mX];
 		for(unsigned int v = 0; v < mX; v++) Xi[v] = X[zi *mX +v];
-		double Bi = B[zi *4 +0];
-		double Zi = B[zi *4 +1];
-		double Li = B[zi *4 +2];
+		double Bi = B[zi *3 +0];
+		double Zi = B[zi *3 +1];
+		double Li = B[zi *3 +2];
 		for (unsigned int zj = 0, ni = 0; ((zj < nX) && (ni < nnSize)); zj++) {
 			if (zj != zi) {
 				double Lij = .0;
 				for(unsigned int v = 0; v < mX; v++) Lij += pow(Xi[v] -X[zj *mX +v], 2);
 				if (Lij <= Li) {
-					double Bj = B[zj *4 +0];
-					double Zj = B[zj *4 +1];
+					double Bj = B[zj *3 +0];
+					double Zj = B[zj *3 +1];
 					unsigned int ij = i *nnSize +ni;
 					P[ij] += std::exp(-Bi *Lij) /Zi;
 					P[ij] += std::exp(-Bj *Lij) /Zj;
@@ -198,18 +195,18 @@ void affMtx::efr_X2P(unsigned int z_ini, unsigned int z_end, double* P, int* W)
 
 // transform input similarities into probabilities
 // FROM FULL-DISTANCE-MATRIX
-void affMtx::efr_D2P(unsigned int z_ini, unsigned int z_end, double* P, int* W)
+void affMtx::efr_D2P(unsigned int z_ini, unsigned int z_end, double* P, unsigned int* W)
 {
 	for (unsigned int zi = z_ini, i = 0; zi < z_end; zi++, i++) {
-		double Bi = B[zi *4 +0];
-		double Zi = B[zi *4 +1];
-		double Li = B[zi *4 +2];
+		double Bi = B[zi *3 +0];
+		double Zi = B[zi *3 +1];
+		double Li = B[zi *3 +2];
 		for (unsigned int zj = 0, ni = 0; ((zj < nX) && (ni < nnSize)); zj++) {
 			if (zj != zi) {
 				double Lij = std::pow(X[zi *mX +zj], 2);
 				if (Lij <= Li) {
-					double Bj = B[zj *4 +0];
-					double Zj = B[zj *4 +1];
+					double Bj = B[zj *3 +0];
+					double Zj = B[zj *3 +1];
 					unsigned int ij = i *nnSize +ni;
 					P[ij] += std::exp(-Bi *Lij) /Zi;
 					P[ij] += std::exp(-Bj *Lij) /Zj;
@@ -224,21 +221,21 @@ void affMtx::efr_D2P(unsigned int z_ini, unsigned int z_end, double* P, int* W)
 
 // transform input euclidean-distances into probabilities
 // FROM SPARSE-MATRIX DATA
-void affMtx::efr_S2P(unsigned int z_ini, unsigned int z_end, double* P, int* W)
+void affMtx::efr_S2P(unsigned int z_ini, unsigned int z_end, double* P, unsigned int* W)
 {
 	for (unsigned int zi = z_ini, i = 0; zi < z_end; zi++, i++) {
 		double Xi[mX];
 		for(unsigned int v = 0; v < mX; v++) Xi[v] = X[zi *mX +v];
-		double Bi = B[zi *4 +0];
-		double Zi = B[zi *4 +1];
-		double Li = B[zi *4 +2];
+		double Bi = B[zi *3 +0];
+		double Zi = B[zi *3 +1];
+		double Li = B[zi *3 +2];
 		for (unsigned int zj = 0, ni = 0; ((zj < nX) && (ni < nnSize)); zj++) {
 			double Xj[mX];
 			for(unsigned int v = 0; v < mX; v++) Xj[v] = X[zj *mX +v];
 			double Lij = spDist(mX, Xi, Xj);
 			if (Lij <= Li) {
-				double Bj = B[zj *4 +0];
-				double Zj = B[zj *4 +1];
+				double Bj = B[zj *3 +0];
+				double Zj = B[zj *3 +1];
 				unsigned int ij = i *nnSize +ni;
 				P[ij] += std::exp(-Bi *Lij) /Zi;
 				P[ij] += std::exp(-Bj *Lij) /Zj;
