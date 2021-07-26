@@ -31,6 +31,9 @@
 using namespace Rcpp;
 using namespace std;
 
+// DBL_EPSILON = 1.0e-9
+// DBL_MIN = 1.0e-37
+
 // thread affinity matrix
 // [[Rcpp::export]]
 double thread_affMtx(unsigned int z_ini, unsigned int z_end, SEXP sexpX, bool isDistance, bool isSparse, SEXP sexpB, SEXP sexpP, SEXP sexpW)
@@ -53,11 +56,11 @@ double thread_affMtx(unsigned int z_ini, unsigned int z_end, SEXP sexpX, bool is
 	//
 	affMtx* affmtx = new affMtx(sexpX, sexpB, zIdx, z, nnSize);
 	if (isDistance)
-		affmtx ->efr_D2P(z_ini, z_end, thread_P, thread_W);
+		affmtx ->bh_D2P(z_ini, z_end, thread_P, thread_W);
 	else if (isSparse)
-		affmtx ->efr_S2P(z_ini, z_end, thread_P, thread_W);
+		affmtx ->bh_S2P(z_ini, z_end, thread_P, thread_W);
 	else
-		affmtx ->efr_X2P(z_ini, z_end, thread_P, thread_W);
+		affmtx ->bh_X2P(z_ini, z_end, thread_P, thread_W);
 	// P normalization factor
 	double zP = affmtx ->zP;
 	// free memory
@@ -95,19 +98,17 @@ double thread_repF(unsigned int z_ini, unsigned int z_end, SEXP sexpY, double th
 	//
 	double zQ = .0;
 	if (theta == .0) {
-		for (unsigned int zi = z_ini, i = 0; zi < z_end; zi++, i++) {
-			for (unsigned int zj = 0; zj < nX; zj++) {
+		for (unsigned int i = z_ini, zi = 0; i < z_end; i++, zi++) {
+			for (unsigned int j = 0; j < nX; j++) {
 				double L[mY];
 				double Lij = 1.0;
-				for(unsigned int d = 0; d < mY; d++) {
-					L[d] = Y[zi *mY +d] -Y[zj *mY +d];
-					if (std::abs(L[d]) < minL) {
-						L[d] = (Y[zi *mY +d] >Y[zj *mY +d]) ? minL : -minL;
-					}
+				for(unsigned int d = 0, ki = i *mY, kj = j *mY; d < mY; d++, ki++, kj++) {
+					L[d] = Y[ki] -Y[kj];
+					if (std::abs(L[d]) < minL) L[d] = (Y[ki] > Y[kj]) ? minL : -minL;
 					Lij += L[d] *L[d];
 				}
 				double Qij = 1.0 /Lij;
-				for(unsigned int d = 0; d < mY; d++) repF[i *d] += Qij *Qij *L[d];
+				for(unsigned int d = 0; d < mY; d++) repF[zi *mY +d] += Qij *Qij *L[d];
 				zQ += Qij;
 			}
 		}
@@ -148,7 +149,9 @@ Rcpp::List thread_iter(unsigned int z_ini, unsigned int z_end, SEXP sexpP, SEXP 
 	// make local copy
 	double* Y = (double*) malloc(nX *mY *sizeof(double));
 	for (unsigned int i = 0, k = 0; i < nX; i++) {
-		for(unsigned int d = 0; d < mY; d++, k++) Y[k] = mtxY[d][i];
+		for(unsigned int d = 0; d < mY; d++, k++) {
+			Y[k] = mtxY[d][i];
+		}
 	}
 	// point-wise updates
 	BigMatrix *bigU = reinterpret_cast <BigMatrix*> (R_ExternalPtrAddr(sexpU));
@@ -167,39 +170,44 @@ Rcpp::List thread_iter(unsigned int z_ini, unsigned int z_end, SEXP sexpP, SEXP 
 	for (unsigned int k = 0, ij = z_ini *mY; k < z *mY; k++, ij++) new_Y[k] = Y[ij];
 	// learning-rate
 	double eta = lRate *4.0;
+	//
+	double minL = DBL_EPSILON /4.0;
+	//
 	double zCost = .0;
 	// +++ TSNE
-	for (unsigned int zi = z_ini, i = 0; zi < z_end; zi++, i++){
+	for (unsigned int i = z_ini, zi = 0; i < z_end; i++, zi++){
 		double atrF[mY];
 		for (unsigned int d = 0; d < mY; d++) atrF[d] = .0;
 		// attractive force
 		for (unsigned int ni = 0; ni < nnSize; ni++) {
-			unsigned int zj = W[i *nnSize +ni];
+			unsigned int j = W[zi *nnSize +ni];
 			double L[mY];
 			double Lij = 1.0;
-			for(unsigned int d = 0; d < mY; d++) {
-				L[d] = Y[zi *mY +d] -Y[zj *mY +d];
+			for(unsigned int d = 0, ki = i *mY, kj = j *mY; d < mY; d++, ki++, kj++) {
+				L[d] = Y[ki] -Y[kj];
+				if (std::abs(L[d]) < minL) L[d] = (Y[ki] > Y[kj]) ? minL : -minL;
 				Lij += L[d] *L[d];
 			}
 			double Qij = 1.0 /Lij;
-			unsigned int ij = i *nnSize +ni;
+			unsigned int ij = zi *nnSize +ni;
 			for(unsigned int d = 0; d < mY; d++) atrF[d] += P[ij] *Qij *L[d];
 			zCost -= P[ij] *std::log(Lij);
 		}
 		// update position
 		// new_Y[i *mY + 0] = atrF[0] /sumP;
 		// new_Y[i *mY + 1] = repF[i *mY +0] /sumQ;
-		for (unsigned int d = 0; d < mY; d++){
-			double dY = atrF[d] /sumP -repF[i *mY +d] /sumQ;
-			if (signbit(dY) != signbit(U[i *mY +d])) {
-				G[i *mY +d] += .2;
+		for (unsigned int d = 0, k = zi *mY; d < mY; d++, k++){
+			double dY = atrF[d] /sumP -repF[k] /sumQ;
+			if (signbit(dY) != signbit(U[k])) {
+				G[k] += .2;
 			}
 			else {
-				G[i *mY +d] *= .8;
-				G[i *mY +d] = std::max(G[i *mY +d], .01);
+				G[k] *= .8;
+				G[k] = std::max(G[k], .01);
 			}
-			U[i *mY +d] = alpha *U[i *mY + d] -eta *G[i *mY +d] *dY;
-			new_Y[i *mY +d] += U[i *mY +d];
+			U[k] = alpha *U[k] -eta *G[k] *dY;
+			// U[k] = alpha *U[k] -eta *(atrF[d] /sumP -repF[k] /sumQ);
+			new_Y[k] += U[k];
 		}
 	}
 	// free memory

@@ -267,7 +267,7 @@ bdm.ptsne <- function(data, bdm, lRate = NULL, theta = 0.0, alpha = 0.5, Y.init 
 		layers <- threads
 	}
 	# if (is.null(lRate)) {
-	# 	lRate <- (bdm$nX *layers /threads) /20
+	# 	lRate <- (bdm$nX *layers /threads) /16
 	# }
 	if (theta > 0.0 && theta < 0.33) {
 		cat('+++ WARNING: theta set to ', 0.0, ' !!\n', sep='')

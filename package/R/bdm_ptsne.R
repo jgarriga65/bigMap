@@ -40,7 +40,8 @@ ptsne.nnSize <- function(ppx, xppx, layers, threads, zSize)
 {
 	# nnSize <- ceiling(min(xppx *ppx *layers /threads, zSize -1))
 	# nnSize <- max(nnSize, 5)
-	nnSize <- ppx
+	if (threads /layers == 1) nnSize <- min(3 *ppx, zSize -1)
+	else nnSize <- ppx
 	return(nnSize)
 }
 
@@ -220,6 +221,7 @@ sckt.ptsne <- function(cl, bdm, progress)
 	# update eRange to workers
 	clusterEvalQ(cl, eRange <- eRange)
 	eSize[1] <- sqrt((eRange[2] -eRange[1])**2 +(eRange[4] -eRange[3])**2)
+	lRate <- (eSize[1] +1.0 /eSize[1]) *log2(bdm$nX *nnSize) *4.0
 	if (progress >= 0) {
 		nulL <- ptsne.info(threads, zSize, nnSize, rxEpochs, iters, 0, avgCost, eSize[1], t0, lRate, theta)
 	}
@@ -257,11 +259,12 @@ sckt.ptsne <- function(cl, bdm, progress)
 			if (mean(Cbm[, (e +1)]) < 0) break
 			# exgg control
 			eSize[(e +1)] <- sqrt((eRange[2] -eRange[1])**2 +(eRange[4] -eRange[3])**2)
+			lRate <- (eSize[(e +1)] +1.0 /eSize[(e +1)]) *log2(bdm$nX *nnSize) *4.0
 			# if (eSize[e +1] > eSize[1]) clusterEvalQ(cl, exgg <- 1.0)
 			# report status
 			if (progress >=0) {
 				avgCost <- mean(Cbm[, (e +1)])
-				epoch.info(e, rxEpochs, avgCost, eSize[(e +1)], t0, te)
+				epoch.info(e, rxEpochs, avgCost, eSize[(e +1)], t0, te, lRate)
 			}
 		}
 
@@ -564,7 +567,7 @@ ptsne.info <- function(threads, zSize, nnSize, rxEpochs, iters, e, avgCost, avgS
 	return(epochSecs)
 }
 
-epoch.info <- function(e, rxEpochs, avgCost, avgSize, t0, te)
+epoch.info <- function(e, rxEpochs, avgCost, avgSize, t0, te, lRate)
 {
 	cat('+++ epoch ', formatC(e, width=4, flag='0'), '/', formatC(rxEpochs, width=4, flag='0'), sep='')
 	cat(formatC(avgCost, format='e', digits=4, width=12))
@@ -575,5 +578,6 @@ epoch.info <- function(e, rxEpochs, avgCost, avgSize, t0, te)
 	tm2End <- runTime/e * (rxEpochs-e)
 	cat('  ', time.format(tm2End), sep='')
 	cat('  ', format(Sys.time()+tm2End, '%H:%M'), sep='')
+	cat('  ', lRate)
 	cat('\n')
 }

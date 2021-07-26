@@ -27,11 +27,12 @@ using namespace std;
 TSNE::TSNE(unsigned int z, unsigned int w, unsigned int mY, double* eRange, int max_iter, double lRate, double theta, double alpha, double zP, double exgg, int nnSize) : z(z), w(w), mY(mY), eRange(eRange), max_iter(max_iter), lRate(lRate), theta(theta), alpha(alpha), zP(zP), exgg(exgg), nnSize(nnSize)
 {
 	// set current value for learning rate
-	this ->eta = 0;
+	double eSize = .0;
 	for (unsigned int d = 0; d < mY; d++) {
-		this ->eta += std::pow(eRange[d *mY +1] -eRange[d *mY +0], 2);
+		eSize += std::pow(eRange[d *mY +1] -eRange[d *mY +0], 2);
 	}
-	this ->eta = std::sqrt(this ->eta) *std::log2(z *nnSize) *4.0;
+	eSize = std::sqrt(eSize);
+	this ->eta = (eSize +1.0 /eSize) *std::log2(z *nnSize) *4.0;
 	this ->minL = DBL_EPSILON /4.0; // DBL_EPSILON = 1.0e-9 (DBL_MIN = 1.0e-37)
 }
 
@@ -93,9 +94,9 @@ double TSNE::exact_Gradient(double* P, double* Y, double* atrF, double* repF)
 			double Lij = 1.0;
 			for(unsigned int d = 0; d < mY; d++) {
 				L[d] = Y[i *mY +d] -Y[j *mY +d];
-				// if (std::abs(L[d]) < minL) {
-				// 	L[d] = (Y[i *mY +d] >Y[j *mY +d]) ? minL : -minL;
-				// }
+				if (std::abs(L[d]) < minL) {
+					L[d] = (Y[i *mY +d] >Y[j *mY +d]) ? minL : -minL;
+				}
 				Lij += L[d] *L[d];
 			}
 			double Qij = 1.0 /Lij;
@@ -129,9 +130,9 @@ double TSNE::apprx_Gradient(double* P, unsigned int* W, double* Y, double* atrF,
 			double Lij = 1.0;
 			for(unsigned int d = 0; d < mY; d++){
 				L[d] = Y[i *mY +d] - Y[j *mY +d];
-				// if (std::abs(L[d]) < minL) {
-				// 	L[d] = (Y[i *mY +d] >Y[j *mY +d]) ? minL : -minL;
-				// }
+				if (std::abs(L[d]) < minL) {
+					L[d] = (Y[i *mY +d] >Y[j *mY +d]) ? minL : -minL;
+				}
 				Lij +=  L[d] *L[d];
 			}
 			unsigned int ij = ijIdx(z, i, j);

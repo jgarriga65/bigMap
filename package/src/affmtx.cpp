@@ -74,19 +74,17 @@ void affMtx::X2P(double* P, unsigned int* W)
 			double Zj = B[zj *3 +1];
 			double Lj = B[zj *3 +2];
 			//
-			// P[ij] = DBL_MIN;
 			if (Lij <= (Li +Lj) /2.0) {
 				if ((nn[i] < nnSize) || (nn[j] < nnSize)) {
 					P[ij]  = std::exp(-Bi *Lij) /Zi;
 					P[ij] += std::exp(-Bj *Lij) /Zj;
 					zP += P[ij];
-					nn[i] ++;
-					nn[j] ++;
+					nn[i]++;
+					nn[j]++;
 					W[w] = i *z +j;
-					w ++;
+					w++;
 				}
 			}
-			// zP += P[ij];
 		}
 	}
 	zP *= 2.0;
@@ -113,10 +111,10 @@ void affMtx::D2P(double* P, unsigned int* W)
 					P[ij] += std::exp(-Bi *Lij) /Zi;
 					P[ij] += std::exp(-Bj *Lij) /Zj;
 					zP += P[ij];
-					nn[i] ++;
-					nn[j] ++;
+					nn[i]++;
+					nn[j]++;
 					W[w] = i *z +j;
-					w ++;
+					w++;
 				}
 			}
 		}
@@ -149,10 +147,10 @@ void affMtx::S2P(double* P, unsigned int* W)
 					P[ij] += std::exp(-Bi *Lij) /Zi;
 					P[ij] += std::exp(-Bj *Lij) /Zj;
 					zP += P[ij];
-					nn[i] ++;
-					nn[j] ++;
+					nn[i]++;
+					nn[j]++;
 					W[w] = i *z +j;
-					w ++;
+					w++;
 				}
 			}
 		}
@@ -164,55 +162,54 @@ void affMtx::S2P(double* P, unsigned int* W)
 
 // transform input similarities into probabilities
 // FROM INPUT-DATA
-void affMtx::efr_X2P(unsigned int z_ini, unsigned int z_end, double* P, unsigned int* W)
+void affMtx::bh_X2P(unsigned int z_ini, unsigned int z_end, double* P, unsigned int* W)
 {
-	for (unsigned int zi = z_ini, i = 0; zi < z_end; zi++, i++) {
+	for (unsigned int i = z_ini, zi = 0; i < z_end; i++, zi++) {
 		double Xi[mX];
-		for(unsigned int v = 0; v < mX; v++) Xi[v] = X[zi *mX +v];
-		double Bi = B[zi *3 +0];
-		double Zi = B[zi *3 +1];
-		double Li = B[zi *3 +2];
-		for (unsigned int zj = 0, ni = 0; ((zj < nX) && (ni < nnSize)); zj++) {
-			if (zj != zi) {
+		for(unsigned int v = 0; v < mX; v++) Xi[v] = X[i *mX +v];
+		double Bi = B[i *3 +0];
+		double Zi = B[i *3 +1];
+		double Li = B[i *3 +2];
+		for (unsigned int j = 0, ni = 0; ((j < nX) && (ni < nnSize)); j++) {
+			if (j != i) {
 				double Lij = .0;
-				for(unsigned int v = 0; v < mX; v++) Lij += pow(Xi[v] -X[zj *mX +v], 2);
+				for(unsigned int v = 0; v < mX; v++) Lij += std::pow(Xi[v] -X[j *mX +v], 2);
 				if (Lij <= Li) {
-					double Bj = B[zj *3 +0];
-					double Zj = B[zj *3 +1];
-					unsigned int ij = i *nnSize +ni;
+					double Bj = B[j *3 +0];
+					double Zj = B[j *3 +1];
+					unsigned int ij = zi *nnSize +ni;
 					P[ij] += std::exp(-Bi *Lij) /Zi;
 					P[ij] += std::exp(-Bj *Lij) /Zj;
 					zP += P[ij];
-					W[ij] = zj;
-					ni ++;
+					W[ij] = j;
+					ni++;
 				}
 			}
 		}
 	}
-	//zP *= 2.0;	// this is not triangular !!!
 }
 
 
 // transform input similarities into probabilities
 // FROM FULL-DISTANCE-MATRIX
-void affMtx::efr_D2P(unsigned int z_ini, unsigned int z_end, double* P, unsigned int* W)
+void affMtx::bh_D2P(unsigned int z_ini, unsigned int z_end, double* P, unsigned int* W)
 {
-	for (unsigned int zi = z_ini, i = 0; zi < z_end; zi++, i++) {
-		double Bi = B[zi *3 +0];
-		double Zi = B[zi *3 +1];
-		double Li = B[zi *3 +2];
-		for (unsigned int zj = 0, ni = 0; ((zj < nX) && (ni < nnSize)); zj++) {
-			if (zj != zi) {
-				double Lij = std::pow(X[zi *mX +zj], 2);
+	for (unsigned int i = z_ini, zi = 0; i < z_end; i++, zi++) {
+		double Bi = B[i *3 +0];
+		double Zi = B[i *3 +1];
+		double Li = B[i *3 +2];
+		for (unsigned int j = 0, ni = 0; ((j < nX) && (ni < nnSize)); j++) {
+			if (j != i) {
+				double Lij = std::pow(X[i *mX +j], 2);
 				if (Lij <= Li) {
-					double Bj = B[zj *3 +0];
-					double Zj = B[zj *3 +1];
-					unsigned int ij = i *nnSize +ni;
+					double Bj = B[j *3 +0];
+					double Zj = B[j *3 +1];
+					unsigned int ij = zi *nnSize +ni;
 					P[ij] += std::exp(-Bi *Lij) /Zi;
 					P[ij] += std::exp(-Bj *Lij) /Zj;
 					zP += P[ij];
-					W[ij] = zj;
-					ni ++;
+					W[ij] = j;
+					ni++;
 				}
 			}
 		}
@@ -221,27 +218,29 @@ void affMtx::efr_D2P(unsigned int z_ini, unsigned int z_end, double* P, unsigned
 
 // transform input euclidean-distances into probabilities
 // FROM SPARSE-MATRIX DATA
-void affMtx::efr_S2P(unsigned int z_ini, unsigned int z_end, double* P, unsigned int* W)
+void affMtx::bh_S2P(unsigned int z_ini, unsigned int z_end, double* P, unsigned int* W)
 {
-	for (unsigned int zi = z_ini, i = 0; zi < z_end; zi++, i++) {
+	for (unsigned int i = z_ini, zi = 0; i < z_end; i++, zi++) {
 		double Xi[mX];
-		for(unsigned int v = 0; v < mX; v++) Xi[v] = X[zi *mX +v];
-		double Bi = B[zi *3 +0];
-		double Zi = B[zi *3 +1];
-		double Li = B[zi *3 +2];
-		for (unsigned int zj = 0, ni = 0; ((zj < nX) && (ni < nnSize)); zj++) {
-			double Xj[mX];
-			for(unsigned int v = 0; v < mX; v++) Xj[v] = X[zj *mX +v];
-			double Lij = spDist(mX, Xi, Xj);
-			if (Lij <= Li) {
-				double Bj = B[zj *3 +0];
-				double Zj = B[zj *3 +1];
-				unsigned int ij = i *nnSize +ni;
-				P[ij] += std::exp(-Bi *Lij) /Zi;
-				P[ij] += std::exp(-Bj *Lij) /Zj;
-				zP += P[ij];
-				W[ij] = zj;
-				ni ++;
+		for(unsigned int v = 0; v < mX; v++) Xi[v] = X[i *mX +v];
+		double Bi = B[i *3 +0];
+		double Zi = B[i *3 +1];
+		double Li = B[i *3 +2];
+		for (unsigned int j = 0, ni = 0; ((j < nX) && (ni < nnSize)); j++) {
+			if (j != i) {
+				double Xj[mX];
+				for(unsigned int v = 0; v < mX; v++) Xj[v] = X[j *mX +v];
+				double Lij = spDist(mX, Xi, Xj);
+				if (Lij <= Li) {
+					double Bj = B[j *3 +0];
+					double Zj = B[j *3 +1];
+					unsigned int ij = zi *nnSize +ni;
+					P[ij] += std::exp(-Bi *Lij) /Zi;
+					P[ij] += std::exp(-Bj *Lij) /Zj;
+					zP += P[ij];
+					W[ij] = j;
+					ni++;
+				}
 			}
 		}
 	}

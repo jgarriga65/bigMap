@@ -182,7 +182,7 @@ Rcpp::NumericMatrix zBeta(int thread_rank, int threads, SEXP sexpX, bool is_dist
 			// double Hi = entropy(Li, Bi, Zi, qNN);
 			// double diff = logppx -Hi;
 			// double Ppx = exp(-Bi *Li[ppx]);
-			// printf("+++ %3d, %6.4e %6.4e %6.4e, %6.4e %6.4e %6.4e \n", i, Bi, Zi, Hi, Li[qNN+50], Ppx, Ppx /Zi);
+			// printf("+++ %3d, %6.4e %6.4e %6.4e, %6.4e %6.4e %6.4e \n", i, Bi, Zi, Hi, Li[qNN], Ppx, Ppx /Zi);
 			// check tolerance
 			if (std::abs(diff) < ppxtol) break;
 			// adjust Beta

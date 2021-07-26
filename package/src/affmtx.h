@@ -18,6 +18,31 @@ static inline unsigned int ijIdx(unsigned int z, unsigned int i, unsigned int j)
 	return (i < j) ? (z *i) -(i +1) *(i +2) /2 +j : (z *j) -(j +1) *(j +2) /2 +i ;
 }
 
+// // sort neighours by affinity
+// static inline std::vector<int> row_affinity_sort(size_t z, size_t nSS, double* Ki)
+// {
+// 	int r = 0;
+// 	std::vector<int> rank(z);
+// 	std::iota(rank.begin(), rank.end(), r ++);
+// 	std::nth_element(rank.begin(), rank.begin() +nSS, rank.end(),
+// 			[&](int a, int b) {return Ki[a] > Ki[b];}
+// 	);
+// 	return rank;
+// }
+//
+// static inline void row_affinity_exact(size_t z, size_t nSS, size_t i, double Bi, double* Ki, double* P)
+// {
+// 	//sort
+// 	std::vector<int> rank = row_affinity_sort(z, nSS, Ki);
+// 	// select and normalize
+// 	double Zi = .0;
+// 	for (size_t k = 0; ((k < nSS) && (Ki[rank[k]] > .0)); k++) Zi += Ki[rank[k]];
+// 	Zi *= (2.0 *z /g2c(Bi));
+// 	for (size_t k = 0; ((k < nSS) && (Ki[rank[k]] > .0)); k++) {
+// 		P[ijIdx(z, i, rank[k])] += Ki[rank[k]] /Zi;
+// 	}
+// }
+
 class affMtx
 {
 public:
@@ -38,18 +63,16 @@ public:
 		X = NULL;
 	}
 
-	// exaggeration factor
-	void exgg(double* E);
 	// transform input similarities into unnormalized probabilities from INPUT-DATA
 	void X2P(double* P, unsigned int* W);
 	// transform input similarities into unnormalized probabilities from DISTANCES Triangular-Matrix
 	void D2P(double* P, unsigned int* W);
 	// transform input similarities into unnormalized probabilities from SPARSE-DATA
 	void S2P(double* P, unsigned int* W);
-	// versions for enbedding final compression
-	void efr_X2P(unsigned int z_ini, unsigned int z_end, double* P, unsigned int* W);
-	void efr_D2P(unsigned int z_ini, unsigned int z_end, double* P, unsigned int* W);
-	void efr_S2P(unsigned int z_ini, unsigned int z_end, double* P, unsigned int* W);
+	// versions for BHt-SNE
+	void bh_X2P(unsigned int z_ini, unsigned int z_end, double* P, unsigned int* W);
+	void bh_D2P(unsigned int z_ini, unsigned int z_end, double* P, unsigned int* W);
+	void bh_S2P(unsigned int z_ini, unsigned int z_end, double* P, unsigned int* W);
 
 };
 
