@@ -3,16 +3,16 @@
 # +++ BHt-SNE and refinement t-SNE with naive parallelization
 # --------------------------------------------------------------------------------
 
-bdm.bhtsne <- function(dSet.data, dSet.name = NULL, is.distance = F, is.sparse = F, normalize = F, dSet.labels = NULL, ppx = 100, xppx = 3.0, iters = 100, theta = .5, eSizeX = 2.0 *sqrt(2), exgg = 1, threads = 4)
+bdm.bhtsne <- function(dSet.data, dSet.name = NULL, is.distance = F, is.sparse = F, normalize = F, dSet.labels = NULL, ppx = 100, xppx = 3.0, iters = 200, theta = .5, lRateX = 2.0, exgg = 1, threads = 4)
 {
 	m <- bdm.init(dSet.data, dSet.name = dSet.name, is.distance = is.distance, is.sparse = is.sparse, normalize = normalize, ppx = ppx, xppx = xppx, dSet.labels = dSet.labels, threads = threads, mpi.cl = NULL)
 	m$ppx <- m$ppx[[1]]
 
-	m.list <- bdm.rtsne(dSet.data, m, ppx = ppx, xppx = xppx, iters = iters, theta = theta, eSizeX = eSizeX, exgg = exgg, threads = threads)
+	m.list <- bdm.rtsne(dSet.data, m, ppx = ppx, xppx = xppx, iters = iters, theta = theta, lRateX = lRateX, exgg = exgg, threads = threads)
 	return(m.list[[2]])
 }
 
-bdm.rtsne <- function(dSet.data, m, ppx, xppx = 3.0, iters = 100, theta = .5, eSizeX = 2.0, exgg = 1, threads = 4)
+bdm.rtsne <- function(dSet.data, m, ppx, xppx = 3.0, iters = 100, theta = .5, lRateX = 2.0, exgg = 1, threads = 4)
 {
 	m.list <- list(m)
 	# +++ start cluster
@@ -62,9 +62,7 @@ bdm.rtsne <- function(dSet.data, m, ppx, xppx = 3.0, iters = 100, theta = .5, eS
 	itCost <- rep(0, iters)
 	itSize <- rep(0, iters)
 	# +++ BHt-SNE parameters
-	eSize_ <- sqrt(sum(apply(apply(Y, 2, range), 2, diff)**2))
-	eSizeX <- eSizeX *sqrt(2)
-	lRate <- 2.0 *eSizeX *log2(nX *nnSize)
+	lRate <- lRateX *log2(nX *nnSize)
 	alpha <- 0.5
 	clusterExport(cl, c('lRate', 'theta', 'alpha'), envir = environment())
 	shiftIt <- 25
@@ -74,8 +72,8 @@ bdm.rtsne <- function(dSet.data, m, ppx, xppx = 3.0, iters = 100, theta = .5, eS
 			t1 <- system.time({
 				# +++ export current embedding
 				# (no need to transpose as each thread we'll use a local copy!!!)
-				eSize <- sqrt(sum(apply(apply(Y, 2, range), 2, diff)**2))
-				lRate <- eSizeX *(eSize /eSize_ +eSize_ /eSize) *log2(nX *nnSize)
+				eSize <- sqrt(sum(apply(apply(Y, 2, range), 2, diff)**2)) /2.0
+				lRate <- lRateX *(eSize +1.0 /eSize) *log2(nX *nnSize)
 				clusterExport(cl, c('lRate'), envir = environment())
 				if (it < iters /2) {
 					alpha <- 0.5 +0.6 *it /iters
