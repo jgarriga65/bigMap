@@ -9,7 +9,7 @@ bdm.init(
   dSet.name = NULL,
   is.distance = F,
   is.sparse = F,
-  normalize = T,
+  normalize = F,
   ppx = 100,
   xppx = 3,
   dSet.labels = NULL,

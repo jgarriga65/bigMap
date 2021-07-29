@@ -211,19 +211,6 @@ dotfrmt <- function(x, decimals = 2)
 }
 
 # ------------------------------------------------------------------------------
-# source xtrs
-# ------------------------------------------------------------------------------
-
-bdm.source <- function(file)
-{
-	ver <- getNamespaceVersion('bigMap')
-	source(paste('~/bigMap/bigMap_', ver, '/R/bdm_auxf.R', sep = ''))
-	# source(paste('~/bigMap/bigMap_', ver, '/R/bdm_plot.R', sep = ''))
-	source(paste('~/bigMap/xtrs/', file, '.R', sep = ''))
-}
-
-
-# ------------------------------------------------------------------------------
 # +++ factor data (allow discrete variables and NAs)
 # ------------------------------------------------------------------------------
 

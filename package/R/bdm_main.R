@@ -66,7 +66,7 @@ bdm.example <- function()
 #' myMap <- bdm.init(exData[, 1:4], dSet.name = 'ex', ppx = 250, labels = exData[, 5])
 #' }
 
-bdm.init <- function(dSet.data, dSet.name = NULL, is.distance = F, is.sparse = F, normalize = T, ppx = 100, xppx = 3.0, dSet.labels = NULL, threads = 4, mpi.cl = NULL)
+bdm.init <- function(dSet.data, dSet.name = NULL, is.distance = F, is.sparse = F, normalize = F, ppx = 100, xppx = 3.0, dSet.labels = NULL, threads = 4, mpi.cl = NULL)
 {
 	bdm <- list()
 	if (is.null(dSet.name)) dSet.name = '__'
@@ -256,7 +256,7 @@ bdm.scp <- function( ... , dest = NULL){
 #' # --- plot ptSNE output
 #' bdm.ptsne.plot(exMap)
 
-bdm.ptsne <- function(data, bdm, lRate = NULL, theta = 0.0, alpha = 0.5, Y.init = NULL, info = 0, threads = 3, mpi.cl = NULL, layers = 2, rounds = 1)
+bdm.ptsne <- function(data, bdm, theta = 0.0, lRateX = 2.0, alpha = 0.5, Y.init = NULL, info = 0, threads = 4, mpi.cl = NULL, layers = 2, rounds = 1)
 {
 	# +++ sanity check
 	if (!is.null(Y.init) && (ncol(Y.init) != 2 *layers)) {
@@ -266,9 +266,6 @@ bdm.ptsne <- function(data, bdm, lRate = NULL, theta = 0.0, alpha = 0.5, Y.init 
 		cat('+++ WARNING: layers set to ', threads, ' !!\n', sep='')
 		layers <- threads
 	}
-	# if (is.null(lRate)) {
-	# 	lRate <- (bdm$nX *layers /threads) /16
-	# }
 	if (theta > 0.0 && theta < 0.33) {
 		cat('+++ WARNING: theta set to ', 0.0, ' !!\n', sep='')
 		theta <- 0.0
@@ -289,7 +286,7 @@ bdm.ptsne <- function(data, bdm, lRate = NULL, theta = 0.0, alpha = 0.5, Y.init 
 		print(bdm$t$dataExport)
 	}
 	#
-	bdm$ptsne <- list(threads = threads, layers = layers, rounds = rounds, lRate = lRate, theta = theta, alpha = alpha, Y = Y.init, exgg = 1.0)
+	bdm$ptsne <- list(threads = threads, layers = layers, rounds = rounds, theta = theta, lRateX = lRateX, alpha = alpha, Y = Y.init, exgg = 1.0)
 	#
 	bdm <- ptsne.get(cl, bdm, info)
 	if (length(bdm) == 1) bdm <- bdm[[1]]

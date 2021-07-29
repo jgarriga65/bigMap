@@ -22,15 +22,10 @@ public:
 	unsigned int w;						// approx. gradient size
 
 	int max_iter;
-	double lRate, eta, theta, alpha, zP, exgg, minL, nnSize;
-	double* eRange;
+	double eta, theta, alpha, zP, exgg, minL;
 
 	// constructor
-	TSNE(unsigned int z, unsigned int w, unsigned int mY, double* eRange, int max_iter, double lRate, double theta, double alpha, double zP, double exgg, int nnSize);
-	//destructor
-	~TSNE() {
-		eRange = NULL;
-	}
+	TSNE(unsigned int z, unsigned int w, unsigned int mY, int max_iter, double theta, double lRate, double alpha, double zP, double exgg);
 
 	// run
 	void run2D(double* P, unsigned int* W, double* Y);

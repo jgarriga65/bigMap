@@ -231,4 +231,10 @@ check <- function(D, ppx = 100, threads = 100, thread_rank = 1, is.distance = F,
 	zBeta(thread_rank, threads, Xbm@address, is.distance, is.sparse, ppx, xppx)
 }
 
+scale <- function(D, is.distance, is.sparse)
+{
+	Xbm <- bigmemory::as.big.matrix(t(D), type = 'double')
+	centerScale(Xbm@address, is.distance, is.sparse)
+	return(t(Xbm[, ]))
+}
 */
