@@ -27,7 +27,7 @@ using namespace Rcpp;
 
 // Exact/Approx. SOCKET implementation of t-SNE
 // [[Rcpp::export]]
-double sckt_zTSNE(unsigned int thread_rank, unsigned int threads, unsigned int layers, SEXP sexpX, SEXP sexpB, SEXP sexpY, SEXP sexpI, int iters, double nnSize, double theta, double lRate, double alpha, bool isDistance, bool isSparse, double exgg)
+double sckt_zTSNE(unsigned int thread_rank, unsigned int threads, unsigned int layers, SEXP sexpX, SEXP sexpB, SEXP sexpY, SEXP sexpI, int iters, double nnSize, double theta, arma::Col<double> &lRate, double alpha, bool isDistance, bool isSparse, double exgg)
 {
 	// current mapping positions
 	Rcpp::XPtr<BigMatrix> bigY(sexpY);
@@ -85,7 +85,7 @@ double sckt_zTSNE(unsigned int thread_rank, unsigned int threads, unsigned int l
 	}
 
 	// +++ TSNE instance
-	TSNE* tsne = new TSNE(thread_size, affmtx ->w, 2, iters, theta, lRate, alpha, affmtx ->zP, exgg);
+	TSNE* tsne = new TSNE(thread_size, affmtx ->w, 2, iters, theta, lRate.begin(), alpha, affmtx ->zP, exgg);
 	// +++ run t-SNE
 	tsne ->run2D(thread_P, thread_W, thread_Y);
 	// +++ compute cost
@@ -151,7 +151,7 @@ void updateY(arma::Mat<double>& Y, const arma::Col<int>& I, const Rcpp::List& zM
 
 // Exact/Approx. MPI implementation of t-SNE
 // [[Rcpp::export]]
-double mpi_zTSNE(SEXP sexpX, SEXP sexpB, arma::Mat<double> &Y, arma::Col<int> indexes, int iters, double nnSize, double theta, double lRate, double alpha, bool isDistance, bool isSparse, double exgg)
+double mpi_zTSNE(SEXP sexpX, SEXP sexpB, arma::Mat<double> &Y, arma::Col<int> indexes, int iters, double nnSize, double theta, arma::Col<double> &lRate, double alpha, bool isDistance, bool isSparse, double exgg)
 {
 	// unsigned int N = bmL->nrow();
 	unsigned int thread_size = Y.n_rows;
@@ -181,7 +181,7 @@ double mpi_zTSNE(SEXP sexpX, SEXP sexpB, arma::Mat<double> &Y, arma::Col<int> in
 	}
 
 	// +++ TSNE instance
-	TSNE* tsne = new TSNE(thread_size, affmtx ->w, 2, iters, theta, lRate, alpha, affmtx ->zP, exgg);
+	TSNE* tsne = new TSNE(thread_size, affmtx ->w, 2, iters, theta, lRate.begin(), alpha, affmtx ->zP, exgg);
 	// +++ run t-SNE
 	tsne ->run2D(thread_P, thread_W, thread_Y);
 	// +++ compute cost

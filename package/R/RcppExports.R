@@ -69,6 +69,10 @@ zBeta <- function(thread_rank, threads, sexpX, is_distance, is_sparse, ppx, xppx
     .Call(`_bigMap_zBeta`, thread_rank, threads, sexpX, is_distance, is_sparse, ppx, xppx)
 }
 
+zBeta_lambertWm1 <- function(thread_rank, threads, sexpX, is_distance, is_sparse, ppx, xppx) {
+    .Call(`_bigMap_zBeta_lambertWm1`, thread_rank, threads, sexpX, is_distance, is_sparse, ppx, xppx)
+}
+
 sckt_zTSNE <- function(thread_rank, threads, layers, sexpX, sexpB, sexpY, sexpI, iters, nnSize, theta, lRate, alpha, isDistance, isSparse, exgg) {
     .Call(`_bigMap_sckt_zTSNE`, thread_rank, threads, layers, sexpX, sexpB, sexpY, sexpI, iters, nnSize, theta, lRate, alpha, isDistance, isSparse, exgg)
 }

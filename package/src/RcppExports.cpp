@@ -40,7 +40,7 @@ BEGIN_RCPP
 END_RCPP
 }
 // thread_iter
-Rcpp::List thread_iter(unsigned int z_ini, unsigned int z_end, SEXP sexpP, SEXP sexpW, SEXP sexpY, double sumP, double sumQ, SEXP sexpR, SEXP sexpU, SEXP sexpG, double lRate, double alpha);
+Rcpp::List thread_iter(unsigned int z_ini, unsigned int z_end, SEXP sexpP, SEXP sexpW, SEXP sexpY, double sumP, double sumQ, SEXP sexpR, SEXP sexpU, SEXP sexpG, arma::Col<double>& lRate, double alpha);
 RcppExport SEXP _bigMap_thread_iter(SEXP z_iniSEXP, SEXP z_endSEXP, SEXP sexpPSEXP, SEXP sexpWSEXP, SEXP sexpYSEXP, SEXP sumPSEXP, SEXP sumQSEXP, SEXP sexpRSEXP, SEXP sexpUSEXP, SEXP sexpGSEXP, SEXP lRateSEXP, SEXP alphaSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
@@ -55,7 +55,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< SEXP >::type sexpR(sexpRSEXP);
     Rcpp::traits::input_parameter< SEXP >::type sexpU(sexpUSEXP);
     Rcpp::traits::input_parameter< SEXP >::type sexpG(sexpGSEXP);
-    Rcpp::traits::input_parameter< double >::type lRate(lRateSEXP);
+    Rcpp::traits::input_parameter< arma::Col<double>& >::type lRate(lRateSEXP);
     Rcpp::traits::input_parameter< double >::type alpha(alphaSEXP);
     rcpp_result_gen = Rcpp::wrap(thread_iter(z_ini, z_end, sexpP, sexpW, sexpY, sumP, sumQ, sexpR, sexpU, sexpG, lRate, alpha));
     return rcpp_result_gen;
@@ -244,8 +244,25 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// zBeta_lambertWm1
+Rcpp::NumericMatrix zBeta_lambertWm1(size_t thread_rank, size_t threads, SEXP sexpX, bool is_distance, bool is_sparse, size_t ppx, double xppx);
+RcppExport SEXP _bigMap_zBeta_lambertWm1(SEXP thread_rankSEXP, SEXP threadsSEXP, SEXP sexpXSEXP, SEXP is_distanceSEXP, SEXP is_sparseSEXP, SEXP ppxSEXP, SEXP xppxSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< size_t >::type thread_rank(thread_rankSEXP);
+    Rcpp::traits::input_parameter< size_t >::type threads(threadsSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type sexpX(sexpXSEXP);
+    Rcpp::traits::input_parameter< bool >::type is_distance(is_distanceSEXP);
+    Rcpp::traits::input_parameter< bool >::type is_sparse(is_sparseSEXP);
+    Rcpp::traits::input_parameter< size_t >::type ppx(ppxSEXP);
+    Rcpp::traits::input_parameter< double >::type xppx(xppxSEXP);
+    rcpp_result_gen = Rcpp::wrap(zBeta_lambertWm1(thread_rank, threads, sexpX, is_distance, is_sparse, ppx, xppx));
+    return rcpp_result_gen;
+END_RCPP
+}
 // sckt_zTSNE
-double sckt_zTSNE(unsigned int thread_rank, unsigned int threads, unsigned int layers, SEXP sexpX, SEXP sexpB, SEXP sexpY, SEXP sexpI, int iters, double nnSize, double theta, double lRate, double alpha, bool isDistance, bool isSparse, double exgg);
+double sckt_zTSNE(unsigned int thread_rank, unsigned int threads, unsigned int layers, SEXP sexpX, SEXP sexpB, SEXP sexpY, SEXP sexpI, int iters, double nnSize, double theta, arma::Col<double>& lRate, double alpha, bool isDistance, bool isSparse, double exgg);
 RcppExport SEXP _bigMap_sckt_zTSNE(SEXP thread_rankSEXP, SEXP threadsSEXP, SEXP layersSEXP, SEXP sexpXSEXP, SEXP sexpBSEXP, SEXP sexpYSEXP, SEXP sexpISEXP, SEXP itersSEXP, SEXP nnSizeSEXP, SEXP thetaSEXP, SEXP lRateSEXP, SEXP alphaSEXP, SEXP isDistanceSEXP, SEXP isSparseSEXP, SEXP exggSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
@@ -260,7 +277,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< int >::type iters(itersSEXP);
     Rcpp::traits::input_parameter< double >::type nnSize(nnSizeSEXP);
     Rcpp::traits::input_parameter< double >::type theta(thetaSEXP);
-    Rcpp::traits::input_parameter< double >::type lRate(lRateSEXP);
+    Rcpp::traits::input_parameter< arma::Col<double>& >::type lRate(lRateSEXP);
     Rcpp::traits::input_parameter< double >::type alpha(alphaSEXP);
     Rcpp::traits::input_parameter< bool >::type isDistance(isDistanceSEXP);
     Rcpp::traits::input_parameter< bool >::type isSparse(isSparseSEXP);
@@ -296,7 +313,7 @@ BEGIN_RCPP
 END_RCPP
 }
 // mpi_zTSNE
-double mpi_zTSNE(SEXP sexpX, SEXP sexpB, arma::Mat<double>& Y, arma::Col<int> indexes, int iters, double nnSize, double theta, double lRate, double alpha, bool isDistance, bool isSparse, double exgg);
+double mpi_zTSNE(SEXP sexpX, SEXP sexpB, arma::Mat<double>& Y, arma::Col<int> indexes, int iters, double nnSize, double theta, arma::Col<double>& lRate, double alpha, bool isDistance, bool isSparse, double exgg);
 RcppExport SEXP _bigMap_mpi_zTSNE(SEXP sexpXSEXP, SEXP sexpBSEXP, SEXP YSEXP, SEXP indexesSEXP, SEXP itersSEXP, SEXP nnSizeSEXP, SEXP thetaSEXP, SEXP lRateSEXP, SEXP alphaSEXP, SEXP isDistanceSEXP, SEXP isSparseSEXP, SEXP exggSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
@@ -308,7 +325,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< int >::type iters(itersSEXP);
     Rcpp::traits::input_parameter< double >::type nnSize(nnSizeSEXP);
     Rcpp::traits::input_parameter< double >::type theta(thetaSEXP);
-    Rcpp::traits::input_parameter< double >::type lRate(lRateSEXP);
+    Rcpp::traits::input_parameter< arma::Col<double>& >::type lRate(lRateSEXP);
     Rcpp::traits::input_parameter< double >::type alpha(alphaSEXP);
     Rcpp::traits::input_parameter< bool >::type isDistance(isDistanceSEXP);
     Rcpp::traits::input_parameter< bool >::type isSparse(isSparseSEXP);
@@ -352,6 +369,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_bigMap_wtt_cpp", (DL_FUNC) &_bigMap_wtt_cpp, 3},
     {"_bigMap_centerScale", (DL_FUNC) &_bigMap_centerScale, 3},
     {"_bigMap_zBeta", (DL_FUNC) &_bigMap_zBeta, 7},
+    {"_bigMap_zBeta_lambertWm1", (DL_FUNC) &_bigMap_zBeta_lambertWm1, 7},
     {"_bigMap_sckt_zTSNE", (DL_FUNC) &_bigMap_sckt_zTSNE, 15},
     {"_bigMap_zChnks", (DL_FUNC) &_bigMap_zChnks, 4},
     {"_bigMap_updateY", (DL_FUNC) &_bigMap_updateY, 4},

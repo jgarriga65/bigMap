@@ -239,8 +239,6 @@ bdm.scp <- function( ... , dest = NULL){
 #'
 #' @param layers Number of layers (\code{minimum} 2, \code{maximum} the number of threads).
 #'
-#' @param rounds Number of rounds (1 by default).
-#'
 #' @return A copy of the input \var{bdm} instance with new element \var{bdm$ptsne} (t-SNE output).
 #'
 #' @examples
@@ -249,14 +247,14 @@ bdm.scp <- function( ... , dest = NULL){
 #' bdm.example()
 #' # --- perform ptSNE
 #' \dontrun{
-#' exMap <- bdm.ptsne(exMap, threads = 10, layers = 2, rounds = 2, ppx = 200)
+#' exMap <- bdm.ptsne(exMap, threads = 10, layers = 2, ppx = 200)
 #' }
 #' # --- plot the Cost function
 #' bdm.cost(exMap)
 #' # --- plot ptSNE output
 #' bdm.ptsne.plot(exMap)
 
-bdm.ptsne <- function(data, bdm, theta = 0.0, lRateX = 2.0, alpha = 0.5, Y.init = NULL, info = 0, threads = 4, mpi.cl = NULL, layers = 2, rounds = 1)
+bdm.ptsne <- function(data, bdm, theta = 0.0, lRateX = 1.0, Y.init = NULL, info = 0, threads = 4, mpi.cl = NULL, layers = 2)
 {
 	# +++ sanity check
 	if (!is.null(Y.init) && (ncol(Y.init) != 2 *layers)) {
@@ -286,7 +284,7 @@ bdm.ptsne <- function(data, bdm, theta = 0.0, lRateX = 2.0, alpha = 0.5, Y.init 
 		print(bdm$t$dataExport)
 	}
 	#
-	bdm$ptsne <- list(threads = threads, layers = layers, rounds = rounds, theta = theta, lRateX = lRateX, alpha = alpha, Y = Y.init, exgg = 1.0)
+	bdm$ptsne <- list(threads = threads, layers = layers, theta = theta, lRateX = lRateX, alpha = 0.5, Y = Y.init, exgg = 1.0)
 	#
 	bdm <- ptsne.get(cl, bdm, info)
 	if (length(bdm) == 1) bdm <- bdm[[1]]

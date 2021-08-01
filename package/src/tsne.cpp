@@ -24,10 +24,14 @@
 using namespace std;
 
 // t-SNE constructor
-TSNE::TSNE(unsigned int z, unsigned int w, unsigned int mY, int max_iter, double theta, double lRate, double alpha, double zP, double exgg) : z(z), w(w), mY(mY), max_iter(max_iter), theta(theta), alpha(alpha), zP(zP), exgg(exgg)
+TSNE::TSNE(unsigned int z, unsigned int w, unsigned int mY, int max_iter, double theta, double* lRate, double alpha, double zP, double exgg) : z(z), w(w), mY(mY), max_iter(max_iter), theta(theta), alpha(alpha), zP(zP), exgg(exgg)
 {
-	this ->eta = lRate *4.0;
-	this ->minL = DBL_EPSILON /4.0; // DBL_EPSILON = 1.0e-9 (DBL_MIN = 1.0e-37)
+	// learning rate
+	std::vector<double> eta (mY);
+	for (size_t d = 0; d < mY; d++) eta[d] = lRate[d] *4.0;
+	this ->eta = eta;
+	// DBL_EPSILON = 1.0e-9 (DBL_MIN = 1.0e-37)
+	this ->minL = DBL_EPSILON /4.0;
 }
 
 // Perform t-SNE (only for 2D embedding !!)
@@ -39,7 +43,7 @@ void TSNE::run2D(double* P, unsigned int* W, double* Y)
 	// . mapping position updates
 	double* updY = (double*) calloc(z *mY, sizeof(double));
 	// . learning rate gains
-	double* gain = (double*) malloc(z *mY *sizeof(double));
+	double* gain = (double*) calloc(z *mY, sizeof(double));
 	for (unsigned int i = 0; i < z; i++) gain[i] = 1.0;
 	// +++ optimization
 	for (int iter = 0; iter < max_iter; iter++) {
@@ -52,42 +56,25 @@ void TSNE::run2D(double* P, unsigned int* W, double* Y)
 		// update (with momentum and learning rate)
 		for (unsigned int i = 0, k = 0; i < z; i++){
 			for (unsigned int d = 0; d < mY; d++, k++){
-
-				// // gradient
-				// double dY = exgg *atrF[k] /zP -repF[k] /zQ;
-				// // learning rate gain
-				// if (signbit(dY) != signbit(updY[k])) {
-				// 	gain[k] += .2;
-				// }
-				// else {
-				// 	gain[k] *= .8 + .01;
-				// }
-				// // update embedding position
-				// updY[k] = alpha *updY[k] -eta *gain[k] *dY;
-				// Y[k] += updY[k];
-
-				updY[k] = alpha *updY[k] -eta *(exgg *atrF[k] /zP -repF[k] /zQ);
+				// gradient
+				double dY = exgg *atrF[k] /zP -repF[k] /zQ;
+				// learning rate gain
+				if (signbit(dY) != signbit(updY[k])) {
+					gain[k] += .2;
+				}
+				else {
+					gain[k] *= .8;
+					gain[k] += .01;
+				}
+				// update embedding position
+				updY[k] = alpha *updY[k] -eta[d] *gain[k] *dY;
 				Y[k] += updY[k];
-
 				// reset attractive/repulsive forces
 				atrF[k] = .0;
 				repF[k] = .0;
 			}
 		}
 	}
-	// eRange is used to compute the embedding size (i.e. pulled from the master)
-	// if not used to compute the learning-rate
-	// there is no need to push it from the master (remove pushing in bdm_ptsne.R !!)
-	// for (unsigned int d = 0; d < mY; d++){
-	// 	eRange[d *mY +0] = .0;
-	// 	eRange[d *mY +1] = .0;
-	// }
-	// for (unsigned int i = 0, k = 0; i < z; i++){
-	// 	for (unsigned int d = 0; d < mY; d++, k++){
-	// 		if (Y[k] < eRange[d *mY +0]) eRange[d *mY +0] = Y[k];
-	// 		else if (Y[k] > eRange[d *mY +1]) eRange[d *mY +1] = Y[k];
-	// 	}
-	// }
 	// +++ Clean up memory
 	free(atrF); atrF  = NULL;
 	free(repF); repF = NULL;

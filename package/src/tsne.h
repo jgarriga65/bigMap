@@ -22,10 +22,11 @@ public:
 	unsigned int w;						// approx. gradient size
 
 	int max_iter;
-	double eta, theta, alpha, zP, exgg, minL;
+	double theta, alpha, zP, exgg, minL;
+	std::vector<double> eta;
 
 	// constructor
-	TSNE(unsigned int z, unsigned int w, unsigned int mY, int max_iter, double theta, double lRate, double alpha, double zP, double exgg);
+	TSNE(unsigned int z, unsigned int w, unsigned int mY, int max_iter, double theta, double* lRate, double alpha, double zP, double exgg);
 
 	// run
 	void run2D(double* P, unsigned int* W, double* Y);

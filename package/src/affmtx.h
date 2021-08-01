@@ -29,17 +29,21 @@ static inline unsigned int ijIdx(unsigned int z, unsigned int i, unsigned int j)
 // 	);
 // 	return rank;
 // }
-//
-// static inline void row_affinity_exact(size_t z, size_t nSS, size_t i, double Bi, double* Ki, double* P)
+// 
+// static inline void row_affinity(unsigned int z, unsigned int nnSize, unsigned int zi, double* Ki, double* P, unsigned int* W, unsigned int &w, double &zP)
 // {
 // 	//sort
-// 	std::vector<int> rank = row_affinity_sort(z, nSS, Ki);
+// 	std::vector<int> rank = row_affinity_sort(z, nnSize, Ki);
 // 	// select and normalize
-// 	double Zi = .0;
-// 	for (size_t k = 0; ((k < nSS) && (Ki[rank[k]] > .0)); k++) Zi += Ki[rank[k]];
-// 	Zi *= (2.0 *z /g2c(Bi));
-// 	for (size_t k = 0; ((k < nSS) && (Ki[rank[k]] > .0)); k++) {
-// 		P[ijIdx(z, i, rank[k])] += Ki[rank[k]] /Zi;
+// 	for (size_t k = 0; ((k < nnSize) && (Ki[rank[k]] > .0)); k++) {
+// 		unsigned int zj = rank[k];
+// 		unsigned int ij = ijIdx(z, zi, rank[k]);
+// 		if (P[ij] == .0) {
+// 			W[w] = (zi < zj) ? zi *z +zj : zj *z +zi;
+// 			w ++;
+// 		}
+// 		P[ij] += Ki[rank[k]];
+// 		zP += P[ij];
 // 	}
 // }
 

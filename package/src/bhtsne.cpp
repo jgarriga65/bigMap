@@ -126,7 +126,7 @@ double thread_repF(unsigned int z_ini, unsigned int z_end, SEXP sexpY, double th
 
 // embedding final compression
 // [[Rcpp::export]]
-Rcpp::List thread_iter(unsigned int z_ini, unsigned int z_end, SEXP sexpP, SEXP sexpW, SEXP sexpY, double sumP, double sumQ, SEXP sexpR, SEXP sexpU, SEXP sexpG, double lRate, double alpha)
+Rcpp::List thread_iter(unsigned int z_ini, unsigned int z_end, SEXP sexpP, SEXP sexpW, SEXP sexpY, double sumP, double sumQ, SEXP sexpR, SEXP sexpU, SEXP sexpG, arma::Col<double> &lRate, double alpha)
 {
 	// thread-size
 	unsigned int z = z_end -z_ini;
@@ -169,7 +169,8 @@ Rcpp::List thread_iter(unsigned int z_ini, unsigned int z_end, SEXP sexpP, SEXP 
 	Rcpp::NumericVector new_Y (z *mY);
 	for (unsigned int k = 0, ij = z_ini *mY; k < z *mY; k++, ij++) new_Y[k] = Y[ij];
 	// learning-rate
-	double eta = lRate *4.0;
+	std::vector<double> eta (mY);
+	for (size_t d = 0; d < mY; d++) eta[d] = lRate[d] *4.0;
 	//
 	double minL = DBL_EPSILON /4.0;
 	//
@@ -205,8 +206,7 @@ Rcpp::List thread_iter(unsigned int z_ini, unsigned int z_end, SEXP sexpP, SEXP 
 				G[k] *= .8;
 				G[k] = std::max(G[k], .01);
 			}
-			U[k] = alpha *U[k] -eta *G[k] *dY;
-			// U[k] = alpha *U[k] -eta *(atrF[d] /sumP -repF[k] /sumQ);
+			U[k] = alpha *U[k] -eta[d] *G[k] *dY;
 			new_Y[k] += U[k];
 		}
 	}

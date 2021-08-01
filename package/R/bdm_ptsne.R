@@ -10,22 +10,6 @@
 # You should have received a copy of the GNU General Public License along with this program. If not, see http://www.gnu.org/licenses.
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-thread.chk.nnSize <- function()
-{
-	if (thread.rank != 0) {
-		# Att!! X transposed
-		zIdx <- sample(seq(ncol(Xbm)))[1:zSize]
-		nnSS_chk(Xbm@address, Bbm@address, zIdx, is.distance, is.sparse, nnSize)
-	}
-}
-
-ptsne.nnSize <- function(ppx, xppx, layers, threads, zSize)
-{
-	if (threads /layers == 1) nnSize <- min(3 *ppx, zSize -1)
-	else nnSize <- ppx
-	return(nnSize)
-}
-
 ptsne.scheme <- function(nX, layers, threads, ppx, xppx = 3.0, base_ppx = 0.03)
 {
 	zSize <- nX *layers /threads
@@ -44,6 +28,22 @@ ptsne.scheme <- function(nX, layers, threads, ppx, xppx = 3.0, base_ppx = 0.03)
 	# 	scheme.list <- list(epochs = iters, iters = epochs)
 	# }
 	return(scheme.list)
+}
+
+ptsne.nnSize <- function(ppx, xppx, layers, threads, zSize)
+{
+	if (threads /layers == 1) nnSize <- min(3 *ppx, zSize -1)
+	else nnSize <- ppx
+	return(nnSize)
+}
+
+thread.chk.nnSize <- function()
+{
+	if (thread.rank != 0) {
+		# Att!! X transposed
+		zIdx <- sample(seq(ncol(Xbm)))[1:zSize]
+		nnSS_chk(Xbm@address, Bbm@address, zIdx, is.distance, is.sparse, nnSize)
+	}
 }
 
 ptsne.get <- function(cl, bdm, info)
@@ -114,7 +114,6 @@ sckt.ptsne <- function(cl, bdm, progress)
 	ppx     <- bdm$ppx$ppx
 	threads <- bdm$ptsne$threads
 	layers  <- bdm$ptsne$layers
-	rounds  <- bdm$ptsne$rounds
 	theta   <- bdm$ptsne$theta
 	lRateX  <- bdm$ptsne$lRateX
 	alpha   <- bdm$ptsne$alpha
@@ -131,7 +130,6 @@ sckt.ptsne <- function(cl, bdm, progress)
 	iters <- scheme$iters
 	# the next condition is meant only for development purposes
 	if (!is.null(bdm$epochs)) epochs <- bdm$epochs
-	rxEpochs <- rounds *epochs
 	if (!is.null(bdm$iters)) iters <- bdm$iters
 	bdm$ptsne$epochs <- epochs
 	bdm$ptsne$iters <- iters
@@ -150,19 +148,20 @@ sckt.ptsne <- function(cl, bdm, progress)
 	}
 	Ybm.dsc <- describe(Ybm)
 
-	# embedding size
-	eSize <- rep(0, (rxEpochs +1))
-	eSize[1] <- sqrt(sum(apply(apply(Ybm[ , ], 2, range), 2, diff)**2)) /2.0
-
 	# learning Rate
-	lRate <- lRateX *(eSize[1] +1.0 /eSize[1]) *log2(zSize *nnSize)
+	xySize <- apply(apply(Ybm[, 1:2], 2, range), 2, diff)
+	lRate <- lRateX *((1.0 +sum(xySize**2)) /xySize) *log2(zSize *nnSize)
 	clusterExport(cl, c('lRate'), envir=environment())
+
+	# embedding size
+	eSize <- rep(0, (epochs +1))
+	eSize[1] <- sqrt(sum(xySize**2))
 
 	# row sampling indexes (substract 1 to convert to C++ indexes !!)
 	Ibm <- big.matrix(bdm$nX, 1, type='integer')
 	Ibm.dsc <- describe(Ibm)
 	# epoch/thread cost matrix
-	Cbm <- as.big.matrix(matrix(0, threads, (rxEpochs +1)), type='double')
+	Cbm <- as.big.matrix(matrix(0, threads, (epochs +1)), type='double')
 	Cbm.dsc <- describe(Cbm)
 
 	# attach bigmatrices to workers
@@ -187,71 +186,61 @@ sckt.ptsne <- function(cl, bdm, progress)
 	clusterEvalQ(cl, iters <- 0)
 	# resample dataset (C++ indexes)
 	Ibm[ ] <- sample(seq(0, (bdm$nX -1)))
+
 	# perform ptSNE
 	nulL <- clusterCall(cl, sckt.ztsne)
 
-	# report starting information
-	avgCost <- mean(Cbm[, 1])
-
-	# learning rate
-	eSize[1] <- sqrt(sum(apply(apply(Ybm[ , ], 2, range), 2, diff)**2)) /2.0
-	lRate <- lRateX *(eSize[1] +1.0 /eSize[1]) *log2(zSize *nnSize)
+	# learning Rate
+	xySize <- apply(apply(Ybm[, 1:2], 2, range), 2, diff)
+	lRate <- lRateX *((1.0 +sum(xySize**2)) /xySize) *log2(zSize *nnSize)
 	clusterExport(cl, c('lRate'), envir=environment())
-
-	if (progress >= 0) {
-		nulL <- ptsne.info(threads, zSize, nnSize, rxEpochs, iters, 0, avgCost, eSize[1], t0, lRate, theta)
-	}
 
 	# reset number of iterations
 	clusterExport(cl, c('epochs', 'iters'), envir=environment())
+
 	# start
 	t0 <- Sys.time()
-	for (r in seq(rounds)){
 
-		if (progress >= 0) {
-			cat('--- round ', formatC(r, width=2, flag='0'), '/', formatC(rounds, width=2, flag='0'), sep='')
-			cat('     ')
-			cat('   <Cost>   ')
-			cat('   <Size>   ')
-			cat('   epSecs ')
-			cat(' time2End ')
-			cat(' eTime ')
-			cat('\n')
-		}
-
-		for (e in seq((r-1)*epochs+1, (r*epochs))) {
-			# epoch start-time
-			te <- Sys.time()
-			# resample dataset (C++ indexes)
-			Ibm[ ] <- sample(seq(0, (bdm$nX -1)))
-			# perform ptSNE
-			nulL <- clusterCall(cl, sckt.ztsne)
-			# security break control
-			if (mean(Cbm[, (e +1)]) < 0) break
-			# lRate control
-			eSize[(e +1)] <- sqrt(sum(apply(apply(Ybm[ , ], 2, range), 2, diff)**2)) /2.0
-			lRate <- lRateX *(eSize[(e +1)] +1.0 /eSize[(e +1)]) *log2(zSize *nnSize)
-			clusterExport(cl, c('lRate'), envir=environment())
-			# report status
-			if (progress >=0) {
-				avgCost <- mean(Cbm[, (e +1)])
-				epoch.info(e, rxEpochs, avgCost, eSize[(e +1)], t0, te, lRate)
-			}
-		}
-
-		# save round
-		if (progress >= 1 || r == rounds){
-			bdm$ptsne$rounds <- r
-			bdm$ptsne$Y <- as.matrix(Ybm[ , ])
-			bdm$ptsne$cost <- as.matrix(Cbm[, 1:(r *epochs +1)])
-			bdm$ptsne$size <- eSize
-		}
-		if (progress == 1) bdm.scp(bdm)
-
-		# security break control
-		if (mean(Cbm[, (r *epochs +1)]) <0 ) break
-
+	# report starting information
+	avgCost <- mean(Cbm[, 1])
+	eSize[1] <- sqrt(sum(xySize**2))
+	if (progress >= 0) {
+		nulL <- ptsne.info(threads, zSize, nnSize, epochs, iters, 0, avgCost, eSize[1], t0, lRate, theta)
 	}
+
+	cat('--- epoch     ')
+	cat('   <Cost>   ')
+	cat('   <Size>   ')
+	cat('   epSecs ')
+	cat(' time2End ')
+	cat(' eTime ')
+	cat('\n')
+
+	for (e in seq(epochs)) {
+		# epoch start-time
+		te <- Sys.time()
+		# resample dataset (C++ indexes)
+		Ibm[ ] <- sample(seq(0, (bdm$nX -1)))
+		# perform ptSNE
+		nulL <- clusterCall(cl, sckt.ztsne)
+		# security break control
+		if (mean(Cbm[, (e +1)]) < 0) break
+		# learning Rate
+		xySize <- apply(apply(Ybm[, 1:2], 2, range), 2, diff)
+		lRate <- lRateX *((1.0 +sum(xySize**2)) /xySize) *log2(zSize *nnSize)
+		clusterExport(cl, c('lRate'), envir=environment())
+		# embedding size
+		eSize[(e +1)] <- sqrt(sum(xySize**2))
+		# report status
+		if (progress >=0) {
+			avgCost <- mean(Cbm[, (e +1)])
+			epoch.info(e, epochs, avgCost, eSize[(e +1)], t0, te, lRate)
+		}
+	}
+
+	bdm$ptsne$Y <- as.matrix(Ybm[ , ])
+	bdm$ptsne$cost <- as.matrix(Cbm[, 1:(epochs +1)])
+	bdm$ptsne$size <- eSize
 
 	if (progress == 2) {
 		bdm$progress <- clusterEvalQ(cl, if (thread.rank == 0) w$mapp.list)[[1]]
@@ -259,7 +248,7 @@ sckt.ptsne <- function(cl, bdm, progress)
 
 	# report status
 	avgCost <- mean(Cbm[, e +1])
-	bdm$t[['epoch']] <- ptsne.info(threads, zSize, nnSize, rxEpochs, iters, e, avgCost, eSize[e +1], t0, lRate, theta)
+	bdm$t[['epoch']] <- ptsne.info(threads, zSize, nnSize, epochs, iters, e, avgCost, eSize[e +1], t0, lRate, theta)
 
 	return(bdm)
 
@@ -271,7 +260,7 @@ sckt.ptsne <- function(cl, bdm, progress)
 
 sckt.ztsne <- function()
 {
-	epoch <<- epoch +1	# Att.!! We are using global variable epoch
+	epoch <<- epoch +1	# Att.!! global variable
 	if (thread.rank == 0) {
 		# save current embedding to make movie
 		if (progress == 2) {
@@ -279,6 +268,7 @@ sckt.ztsne <- function()
 		}
 	}
 	else {
+		if (epoch > epochs /2) alpha <- 0.5 +0.3 *epoch /epochs
 		zCost <- sckt_zTSNE(thread.rank, threads, layers, Xbm@address, Bbm@address, Ybm@address, Ibm@address, iters, nnSize, theta, lRate, alpha, is.distance, is.sparse, exgg)
 		# Cbm[thread.rank, epoch] <- zCost /exgg -log(exgg)
 		Cbm[thread.rank, epoch] <- zCost
@@ -295,7 +285,6 @@ mpi.ptsne <- function(cl, bdm, progress)
 	ppx     <- bdm$ppx$ppx
 	threads <- bdm$ptsne$threads
 	layers  <- bdm$ptsne$layers
-	rounds  <- bdm$ptsne$rounds
 	theta   <- bdm$ptsne$theta
 	lRateX  <- bdm$ptsne$lRateX
 	alpha   <- bdm$ptsne$alpha
@@ -312,7 +301,6 @@ mpi.ptsne <- function(cl, bdm, progress)
 	iters <- scheme$iters
 	# the next condition is meant only for development purposes
 	if (!is.null(bdm$epochs)) epochs <- bdm$epochs
-	rxEpochs <- rounds *epochs
 	if (!is.null(bdm$iters)) iters <- bdm$iters
 	bdm$ptsne$epochs <- epochs
 	bdm$ptsne$iters <- iters
@@ -346,16 +334,14 @@ mpi.ptsne <- function(cl, bdm, progress)
 		Y <- ptsne.init(bdm$nX, layers)
 	}
 
-	# embedding size
-	eSize <- rep(0, (rxEpochs +1))
-	eSize[1] <- sqrt(sum(apply(apply(Y, 2, range), 2, diff)**2)) /2.0
-
 	# learning Rate
-	lRate <- lRateX *(eSize[1] +1.0 /eSize[1]) *log2(zSize *nnSize)
+	xySize <- apply(apply(Y[, 1:2], 2, range), 2, diff)
+	lRate <- lRateX *((1.0 +sum(xySize**2)) /xySize) *log2(zSize *nnSize)
 	clusterExport(cl, c('lRate'), envir=environment())
 
 	# initialize cost&size functions
-	e.cost <- matrix(0, nrow = threads, ncol = rxEpochs +1)
+	e.cost <- matrix(0, nrow = threads, ncol = epochs +1)
+	eSize <- rep(0, (epochs +1))
 
 	# special initialization for thread.rank != 0
 	clusterEvalQ(cl,
@@ -374,73 +360,71 @@ mpi.ptsne <- function(cl, bdm, progress)
 	I <- sample(seq(bdm$nX)) -1
 	# get I&Y chunks
 	zChnks(Z.list, Y, I, zBrks)
+
 	# pool cost from workers
 	# NULL returned by thread.rank == 0 is removed by unlist
 	eCost <- unlist(clusterApply(cl, Z.list, mpi.ztsne))
 	e.cost[, 1] <- unlist(clusterApply(cl, Z.list, mpi.ztsne))
 
 	# update lRate to workers
-	eSize[1] <- sqrt(sum(apply(apply(Y, 2, range), 2, diff)**2)) /2.0
-	lRate <- lRateX *(eSize[1] +1.0 /eSize[1]) *log2(zSize *nnSize)
+	xySize <- apply(apply(Y[, 1:2], 2, range), 2, diff)
+	lRate <- lRateX *((1.0 +sum(xySize**2)) /xySize) *log2(zSize *nnSize)
 	clusterExport(cl, c('lRate'), envir=environment())
-
-	# report starting information
-	avgCost <- mean(e.cost[ , 1])
-	nulL <- ptsne.info(threads, zSize, nnSize, rxEpochs, iters, 0, avgCost, eSize[1], t0, lRate, theta)
 
 	# +++ reset number of iterations on workers
 	clusterExport(cl, c('epochs', 'iters'), envir = environment())
+
 	# start
 	t0 <- Sys.time()
-	for (r in seq(rounds)){
+	cat('--- epoch     ')
+	cat('   <Cost>   ')
+	cat('   <Size>   ')
+	cat(' <epSecs> ')
+	cat(' time2End ')
+	cat(' eTime ')
+	cat('\n')
 
-		cat('--- round ', formatC(r, width=2, flag='0'), '/', formatC(rounds, width=2, flag='0'), sep='')
-		cat('     ')
-		cat('   <Qlty>   ')
-		cat('   <Size>   ')
-		cat(' <epSecs> ')
-		cat(' time2End ')
-		cat(' eTime ')
-		cat('\n')
+	# report starting information
+	avgCost <- mean(e.cost[ , 1])
+	eSize[1] <- sqrt(sum(xySize**2))
+	nulL <- ptsne.info(threads, zSize, nnSize, epochs, iters, 0, avgCost, eSize[1], t0, lRate, theta)
 
-		for (e in seq((r-1)*epochs+1, (r*epochs))){
-			# epoch starting time
-			te <- Sys.time()
-			# resample dataset. Att!! C++ indexes
-			I <- sample(seq(bdm$nX)) -1
-			# get I&Y chunks
-			zChnks(Z.list, Y, I, zBrks)
-			# perform partial ptSNE and pool workers epoch-cost
-			# NULL returned by thread.rank == 0 is removed by unlist
-			e.cost[, (e +1)] <- unlist(clusterApply(cl, Z.list, mpi.ztsne))
-			# pool partial mappings from workers
-			zMap.list <- clusterEvalQ(cl, if (thread.rank != 0) w$zY)
-			# restructure global mapping
-			updateY(Y, I, zMap.list, zBrks)
-			# lRate control
-			eSize[(e +1)] <- sqrt(sum(apply(apply(Y, 2, range), 2, diff)**2)) /2.0
-			lRate <- lRateX *(eSize[e +1] +1.0 /eSize[e +1]) *log2(zSize *nnSize)
-			clusterExport(cl, c('lRate'), envir=environment())
-			# report status
-			if (progress >= 0) {
-				avgCost <- mean(e.cost[, e+1])
-				epoch.info(e, rxEpochs, avgCost, eSize[e +1], t0, te, lRate)
-			}
-			# security break control
-			if (mean(e.cost[, e+1]) < 0) break
+	for (e in seq(epochs)) {
+		# epoch starting time
+		te <- Sys.time()
+		# resample dataset. Att!! C++ indexes
+		I <- sample(seq(bdm$nX)) -1
+		# get I&Y chunks
+		zChnks(Z.list, Y, I, zBrks)
+		# perform partial ptSNE and pool workers epoch-cost
+		# NULL returned by thread.rank == 0 is removed by unlist
+		e.cost[, (e +1)] <- unlist(clusterApply(cl, Z.list, mpi.ztsne))
+		# pool partial mappings from workers
+		zMap.list <- clusterEvalQ(cl, if (thread.rank != 0) w$zY)
+		# restructure global mapping
+		updateY(Y, I, zMap.list, zBrks)
+		# lRate control
+		xySize <- apply(apply(Y[, 1:2], 2, range), 2, diff)
+		lRate <- lRateX *((1.0 +sum(xySize**2)) /xySize) *log2(zSize *nnSize)
+		clusterExport(cl, c('lRate'), envir=environment())
+		# embedding size
+		eSize[(e +1)] <- sqrt(sum(xySize**2))
+		# report status
+		if (progress >= 0) {
+			avgCost <- mean(e.cost[, e+1])
+			epoch.info(e, epochs, avgCost, eSize[e +1], t0, te, lRate)
 		}
-		# save round
-		if (progress >= 1 || r == rounds) {
-			bdm$ptsne$rounds <- r
-			bdm$ptsne$Y <- Y
-			bdm$ptsne$cost <- as.matrix(e.cost[, 1:(r *epochs +1)])
-			bdm$ptsne$size <- eSize
-		}
-		if (progress == 1) bdm.scp(bdm)
+		# security break control
+		if (mean(e.cost[, e+1]) < 0) break
 	}
+
+	bdm$ptsne$Y <- Y
+	bdm$ptsne$cost <- as.matrix(e.cost[, 1:(epochs +1)])
+	bdm$ptsne$size <- eSize
+
 	# report status
 	avgCost <- mean(e.cost[, e +1])
-	bdm$t[['epoch']] <- ptsne.info(threads, zSize, nnSize, rxEpochs, iters, e, avgCost, eSize[e +1], t0, lRate, theta)
+	bdm$t[['epoch']] <- ptsne.info(threads, zSize, nnSize, epochs, iters, e, avgCost, eSize[e +1], t0, lRate, theta)
 	#
 	return(bdm)
 }
@@ -455,6 +439,7 @@ mpi.ztsne <- function(zChnk)
 	if (thread.rank != 0) {
 		w$zI <-  zChnk[, 1]
 		w$zY <- zChnk[, 2:3]
+		if (epoch > epochs /2) alpha <- 0.5 +0.3 *epoch /epochs
 		mpi_zTSNE(Xbm@address, Bbm@address, w$zY, w$zI, iters, nnSize, theta, lRate, alpha, is.distance, is.sparse, exgg)
 	}
 }
@@ -498,26 +483,23 @@ time.format <- function(time.secs)
 	return(ft)
 }
 
-ptsne.info <- function(threads, zSize, nnSize, rxEpochs, iters, e, avgCost, avgSize, t0, lRate, theta)
+ptsne.info <- function(threads, zSize, nnSize, epochs, iters, e, avgCost, avgSize, t0, lRate, theta)
 {
 	cat('...')
 	cat(' threads ', threads, sep='')
 	cat(', size ', zSize, sep='')
 	cat(', nnSize ', nnSize, sep='')
-	cat(', epochs ', rxEpochs, sep='')
+	cat(', theta ', theta, sep='')
+	cat(', epochs ', epochs, sep='')
 	cat(', iters ', iters, sep='')
 	cat('\n')
-	cat('...')
-	cat(' lRate ', lRate, sep='')
-	cat(', theta ', theta, sep='')
-	cat('\n')
-	cat('+++ epoch ', formatC(e, width=4, flag='0'), '/', formatC(rxEpochs, width=4, flag='0'), sep='')
+	cat('+++ ', formatC(e, width=4, flag='0'), '/', formatC(epochs, width=4, flag='0'), sep='')
 	cat(formatC(avgCost, format='e', digits=4, width=12))
 	cat(formatC(avgSize, format='e', digits=4, width=12))
 	epochSecs <- 0
 	if (e > 0){
 		runTime <- as.numeric(difftime(Sys.time(), t0, units='secs'))
-		epochSecs <- runTime/rxEpochs
+		epochSecs <- runTime/epochs
 		cat('  ', formatC(epochSecs, format='f', digits=4, width=8), sep='')
 		cat('  ', time.format(runTime), sep='')
 
@@ -526,15 +508,15 @@ ptsne.info <- function(threads, zSize, nnSize, rxEpochs, iters, e, avgCost, avgS
 	return(epochSecs)
 }
 
-epoch.info <- function(e, rxEpochs, avgCost, avgSize, t0, te, lRate)
+epoch.info <- function(e, epochs, avgCost, avgSize, t0, te, lRate)
 {
-	cat('+++ epoch ', formatC(e, width=4, flag='0'), '/', formatC(rxEpochs, width=4, flag='0'), sep='')
+	cat('+++ ', formatC(e, width=4, flag='0'), '/', formatC(epochs, width=4, flag='0'), sep='')
 	cat(formatC(avgCost, format='e', digits=4, width=12))
 	cat(formatC(avgSize, format='e', digits=4, width=12))
 	epchSecs <- as.numeric(difftime(Sys.time(), te, units='secs'))
 	cat('  ', formatC(epchSecs, format='f', digits=4, width=8), sep='')
 	runTime <- as.numeric(difftime(Sys.time(), t0, units='secs'))
-	tm2End <- runTime/e * (rxEpochs-e)
+	tm2End <- runTime/e * (epochs-e)
 	cat('  ', time.format(tm2End), sep='')
 	cat('  ', format(Sys.time()+tm2End, '%H:%M'), sep='')
 	cat('  ', lRate)

@@ -74,7 +74,7 @@ void affMtx::X2P(double* P, unsigned int* W)
 			double Zj = B[zj *3 +1];
 			double Lj = B[zj *3 +2];
 			//
-			if (Lij <= (Li +Lj) /2.0) {
+			if ((Lij <= Li) || (Lij <= Lj)) {
 				if ((nn[i] < nnSize) || (nn[j] < nnSize)) {
 					P[ij]  = std::exp(-Bi *Lij) /Zi;
 					P[ij] += std::exp(-Bj *Lij) /Zj;
@@ -106,7 +106,7 @@ void affMtx::D2P(double* P, unsigned int* W)
 			double Bj = B[zj *3 +0];
 			double Zj = B[zj *3 +1];
 			double Lj = B[zj *3 +2];
-			if (Lij <= (Li +Lj) /2.0) {
+			if ((Lij <= Li) || (Lij <= Lj)) {
 				if ((nn[i] < nnSize) || (nn[j] < nnSize)) {
 					P[ij] += std::exp(-Bi *Lij) /Zi;
 					P[ij] += std::exp(-Bj *Lij) /Zj;
@@ -142,7 +142,7 @@ void affMtx::S2P(double* P, unsigned int* W)
 			double Bj = B[zj *3 +0];
 			double Zj = B[zj *3 +1];
 			double Lj = B[zj *3 +2];
-			if (Lij <= (Li +Lj) /2.0) {
+			if ((Lij <= Li) || (Lij <= Lj)) {
 				if ((nn[i] < nnSize) || (nn[j] < nnSize)) {
 					P[ij] += std::exp(-Bi *Lij) /Zi;
 					P[ij] += std::exp(-Bj *Lij) /Zj;
@@ -157,6 +157,30 @@ void affMtx::S2P(double* P, unsigned int* W)
 	}
 	zP *= 2.0;
 }
+//
+// void affMtx::S2P(double* P, unsigned int* W)
+// {
+// 	std::vector<double> Ki(z);
+// 	for (unsigned int zi = 0; zi < z; zi++) {
+// 		unsigned int i = zIdx[zi];
+// 		double Xi[mX];
+// 		for(size_t v = 0; v < mX; v++) Xi[v] = X[i *mX +v];
+// 		double Bi = B[i *3 +0];
+// 		double Zi = B[i *3 +1];
+// 		double Li = 32.0 /Bi;
+// 		for (unsigned int zj = 0; zj < z; zj++) {
+// 			Ki[zj] = .0;
+// 			unsigned int j = zIdx[zj];
+// 			if (j != i) {
+// 				double Xj[mX];
+// 				for(size_t v = 0; v < mX; v++) Xj[v] = X[j *mX +v];
+// 				double Lij = spDist(mX, Xi, Xj);
+// 				if (Lij <= Li) Ki[zj] = std::exp(-Bi *Lij) /Zi;
+// 			}
+// 		}
+// 		row_affinity(z, nnSize, i, Ki.data(), P, W, w, zP);
+// 	}
+// }
 
 // +++++++++++++++++++++++++++++++++++ embedding final compression
 
