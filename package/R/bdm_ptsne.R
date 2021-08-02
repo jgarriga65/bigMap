@@ -150,7 +150,7 @@ sckt.ptsne <- function(cl, bdm, progress)
 
 	# learning Rate
 	xySize <- apply(apply(Ybm[, 1:2], 2, range), 2, diff)
-	lRate <- lRateX *((1.0 +sum(xySize**2)) /xySize) *log2(zSize *nnSize)
+	lRate <- lRateX *((1.0 +sum(xySize**2)) /xySize) *log2(zSize)
 	clusterExport(cl, c('lRate'), envir=environment())
 
 	# embedding size
@@ -192,7 +192,7 @@ sckt.ptsne <- function(cl, bdm, progress)
 
 	# learning Rate
 	xySize <- apply(apply(Ybm[, 1:2], 2, range), 2, diff)
-	lRate <- lRateX *((1.0 +sum(xySize**2)) /xySize) *log2(zSize *nnSize)
+	lRate <- lRateX *((1.0 +sum(xySize**2)) /xySize) *log2(zSize)
 	clusterExport(cl, c('lRate'), envir=environment())
 
 	# reset number of iterations
@@ -227,7 +227,7 @@ sckt.ptsne <- function(cl, bdm, progress)
 		if (mean(Cbm[, (e +1)]) < 0) break
 		# learning Rate
 		xySize <- apply(apply(Ybm[, 1:2], 2, range), 2, diff)
-		lRate <- lRateX *((1.0 +sum(xySize**2)) /xySize) *log2(zSize *nnSize)
+		lRate <- lRateX *((1.0 +sum(xySize**2)) /xySize) *log2(zSize)
 		clusterExport(cl, c('lRate'), envir=environment())
 		# embedding size
 		eSize[(e +1)] <- sqrt(sum(xySize**2))
@@ -336,7 +336,7 @@ mpi.ptsne <- function(cl, bdm, progress)
 
 	# learning Rate
 	xySize <- apply(apply(Y[, 1:2], 2, range), 2, diff)
-	lRate <- lRateX *((1.0 +sum(xySize**2)) /xySize) *log2(zSize *nnSize)
+	lRate <- lRateX *((1.0 +sum(xySize**2)) /xySize) *log2(zSize)
 	clusterExport(cl, c('lRate'), envir=environment())
 
 	# initialize cost&size functions
@@ -368,7 +368,7 @@ mpi.ptsne <- function(cl, bdm, progress)
 
 	# update lRate to workers
 	xySize <- apply(apply(Y[, 1:2], 2, range), 2, diff)
-	lRate <- lRateX *((1.0 +sum(xySize**2)) /xySize) *log2(zSize *nnSize)
+	lRate <- lRateX *((1.0 +sum(xySize**2)) /xySize) *log2(zSize)
 	clusterExport(cl, c('lRate'), envir=environment())
 
 	# +++ reset number of iterations on workers
@@ -405,7 +405,7 @@ mpi.ptsne <- function(cl, bdm, progress)
 		updateY(Y, I, zMap.list, zBrks)
 		# lRate control
 		xySize <- apply(apply(Y[, 1:2], 2, range), 2, diff)
-		lRate <- lRateX *((1.0 +sum(xySize**2)) /xySize) *log2(zSize *nnSize)
+		lRate <- lRateX *((1.0 +sum(xySize**2)) /xySize) *log2(zSize)
 		clusterExport(cl, c('lRate'), envir=environment())
 		# embedding size
 		eSize[(e +1)] <- sqrt(sum(xySize**2))

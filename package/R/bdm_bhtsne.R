@@ -62,7 +62,7 @@ bdm.rtsne <- function(dSet.data, m, ppx, xppx = 3.0, iters = 100, theta = .5, lR
 	itSize <- rep(0, iters)
 	# +++ BHt-SNE parameters
 	xySize <- apply(apply(Y, 2, range), 2, diff)
-	lRate <- lRateX *((1.0 +sum(xySize**2)) /xySize) *log2(nX *nnSize)
+	lRate <- lRateX *((1.0 +sum(xySize**2)) /xySize) *log2(nX)
 	alpha <- 0.5
 	clusterExport(cl, c('lRate', 'theta', 'alpha'), envir = environment())
 	# shiftIt <- 25
@@ -73,7 +73,7 @@ bdm.rtsne <- function(dSet.data, m, ppx, xppx = 3.0, iters = 100, theta = .5, lR
 				# +++ export current embedding
 				# (no need to transpose as each thread we'll use a local copy!!!)
 				xySize <- apply(apply(Y, 2, range), 2, diff)
-				lRate <- lRateX *((1.0 +sum(xySize**2)) /xySize) *log2(nX *nnSize)
+				lRate <- lRateX *((1.0 +sum(xySize**2)) /xySize) *log2(nX)
 				clusterExport(cl, c('lRate'), envir = environment())
 				if (it > iters /2) {
 					alpha <- 0.5 +0.3 *it /iters
