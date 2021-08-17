@@ -125,7 +125,7 @@ double entropy(std::vector<double> Li, double Bi, double &Zi, int qNN)
 	// 2. for large Bi and largest values of Li[j], Kij might vanish and so Zi
 	// 3. all qNN neighbours at the same distance makes Bi increase untill
 	// they all fall out of the neighborhood making Zi = 0
-	if (Zi > qNN *1e-12) {
+	if (Zi > qNN *1e-9) {
 		Hi *= Bi /Zi;
 		Hi += std::log(Zi);
 	}
@@ -176,21 +176,24 @@ Rcpp::NumericMatrix zBeta(int thread_rank, int threads, SEXP sexpX, bool is_dist
 		std::nth_element(Li.begin(), Li.begin() +qNN, Li.end());
 		// compute Beta
 		double B_lambertWm1 = -1.0 /(2 *Li[qNN]) *lambertWm1_CS(lambert_factor *Li[qNN]);
+		// option 2 (increase L_ex = 3*Li[qNN] to decrease B_lambertWm1)
+		// double B_lambertWm1 = -1.0 /(6 *Li[qNN]) *lambertWm1_CS(lambert_factor *3 *Li[qNN]);
+		//
 		double Bi = 1.0, minBeta = 0, maxBeta = DBL_MAX;
 		double Zi;
 		for (unsigned int iter = 0; iter < 100; iter++) {
 			// compute log-perplexity for current Beta
 			double Hi = entropy(Li, Bi, Zi, qNN);
+			// double diff = logppx -Hi;
+			// double Ppx = exp(-Bi *Li[ppx]);
+			// printf("+++ %3u, %6.4e %6.4e %6.4e, %6.4e %6.4e %6.4e \n", i, Bi, Zi, Hi, B_lambertWm1, Ppx, Ppx /Zi);
 			if ((Hi == 0) && (Bi > B_lambertWm1)) {
 				Bi = B_lambertWm1;
 				entropy(Li, Bi, Zi, qNN);
 				break;
 			}
-			double diff = logppx -Hi;
-			// double diff = logppx -Hi;
-			// double Ppx = exp(-Bi *Li[ppx]);
-			// printf("+++ %3u, %6.4e %6.4e %6.4e, %6.4e %6.4e %6.4e \n", i, Bi, Zi, Hi, B_lambertWm1, Ppx, Ppx /Zi);
 			// check tolerance
+			double diff = logppx -Hi;
 			if (std::abs(diff) < ppxtol) break;
 			// adjust Beta
 			if (diff < 0){
@@ -328,9 +331,9 @@ Rcpp::NumericMatrix zBeta_lambertWm1(size_t thread_rank, size_t threads, SEXP se
 
 # Att!! After many checks with P1M, MNIST, S3D, Technosperm, Macosko15, ..
 # I find out the settings below seem to work well:
-# 1. Zi > qNN *1e-12	(this is the most definitive !!!)
+# 1. Zi > qNN *1e-12	(this is the most definitive !!!)	// modified 10/08/2021 Zi > qNN *1e-9
 # 2. logppx = log(ppx)
-# 3. q3p = qNN = xppx *ppx (xppx = threads /layers)
+# 3. q3p = qNN = xppx *ppx (xppx = threads /layers)			// modified 01/08/2021 xppx = 3
 # 4. Bi = 1
 # 5. there is no point in center/scale the input data.
 

@@ -19,30 +19,27 @@ static inline unsigned int ijIdx(unsigned int z, unsigned int i, unsigned int j)
 }
 
 // // sort neighours by affinity
-// static inline std::vector<int> row_affinity_sort(size_t z, size_t nSS, double* Ki)
+// static inline std::vector<int> row_affinity_sort(size_t z, size_t nnSize, double* Ki)
 // {
 // 	int r = 0;
 // 	std::vector<int> rank(z);
 // 	std::iota(rank.begin(), rank.end(), r ++);
-// 	std::nth_element(rank.begin(), rank.begin() +nSS, rank.end(),
+// 	std::nth_element(rank.begin(), rank.begin() +nnSize, rank.end(),
 // 			[&](int a, int b) {return Ki[a] > Ki[b];}
 // 	);
 // 	return rank;
 // }
-// 
-// static inline void row_affinity(unsigned int z, unsigned int nnSize, unsigned int zi, double* Ki, double* P, unsigned int* W, unsigned int &w, double &zP)
+//
+// static inline void row_affinity(unsigned int z, unsigned int nnSize, unsigned int zi, double* Ki, double* P, unsigned int* W, double &zP)
 // {
 // 	//sort
 // 	std::vector<int> rank = row_affinity_sort(z, nnSize, Ki);
 // 	// select and normalize
 // 	for (size_t k = 0; ((k < nnSize) && (Ki[rank[k]] > .0)); k++) {
 // 		unsigned int zj = rank[k];
-// 		unsigned int ij = ijIdx(z, zi, rank[k]);
-// 		if (P[ij] == .0) {
-// 			W[w] = (zi < zj) ? zi *z +zj : zj *z +zi;
-// 			w ++;
-// 		}
-// 		P[ij] += Ki[rank[k]];
+// 		unsigned int ij = zi *nnSize +k;
+// 		P[ij] = Ki[zj];
+// 		W[ij] = zj;
 // 		zP += P[ij];
 // 	}
 // }
@@ -52,7 +49,7 @@ class affMtx
 public:
 
 	// t-SNE input/ouput matrix size
-	unsigned int z, w, nX, mX, nnSize;
+	unsigned int z, nX, mX, nnSize;
 	int* zIdx;
 	double* X;
 	double* B;
@@ -73,6 +70,7 @@ public:
 	void D2P(double* P, unsigned int* W);
 	// transform input similarities into unnormalized probabilities from SPARSE-DATA
 	void S2P(double* P, unsigned int* W);
+	// void S2P_exact(double* P, unsigned int* W);
 	// versions for BHt-SNE
 	void bh_X2P(unsigned int z_ini, unsigned int z_end, double* P, unsigned int* W);
 	void bh_D2P(unsigned int z_ini, unsigned int z_end, double* P, unsigned int* W);

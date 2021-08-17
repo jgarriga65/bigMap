@@ -27,7 +27,7 @@
 #' bdm.example()
 #' bdm.cost(exMap)
 
-bdm.cost <- function(bdm, offset=0)
+bdm.cost <- function(bdm, x.lim = NULL)
 {
 	if (is.null(bdm$dSet)) bdm.list <- bdm
 	else bdm.list <- list(bdm)
@@ -38,7 +38,7 @@ bdm.cost <- function(bdm, offset=0)
 
 	nulL <- lapply(bdm.list, function(bdm)
 	{
-		ptsne.cost(bdm, offset=offset)
+		ptsne.cost(bdm, x.lim = x.lim)
 	})
 
 	# fill layout
@@ -50,17 +50,18 @@ bdm.cost <- function(bdm, offset=0)
 
 # +++ Plot cost/size internal function.
 
-ptsne.cost <- function(bdm, offset = 0, movie = F, mtext.cex = 1.2)
+ptsne.cost <- function(bdm, x.lim = NULL, movie = F, mtext.cex = 1.2)
 {
 	if (!is.null(bdm$ptsne$Y))
 	{
 		if (bdm$ptsne$threads == 1) bdm$ptsne$cost <- t(bdm$ptsne$cost)
 		cost.clr <- brewer.pal(5, 'Purples')
-		x <- offset:(ncol(bdm$ptsne$cost)-1)
+		if (is.null(x.lim)) x <- 0:(ncol(bdm$ptsne$cost)-1)
+		else x <- (x.lim[1]: x.lim[2]) -1
 		y <- x +1
 		# cost by threads
 		if (bdm$ptsne$threads == 1) {
-			plot(x, bdm$ptsne$cost[1, y], type='l', col=cost.clr[5], axes=F, xlab='', ylab='', ylim=range(bdm$ptsne$cost), lwd = 1.5)
+			plot(x, bdm$ptsne$cost[1, y], type='l', col=cost.clr[5], axes=F, xlab='', ylab='', ylim = range(bdm$ptsne$cost[1, y]), lwd = 1.5)
 		} else {
 			thread <- 1
 			plot(x, bdm$ptsne$cost[thread, y], type='l', col=cost.clr[2], axes=F, xlab='', ylab='', ylim=range(bdm$ptsne$cost))
@@ -73,15 +74,15 @@ ptsne.cost <- function(bdm, offset = 0, movie = F, mtext.cex = 1.2)
 		}
 		axis(side=1, at=pretty(range(x)), tick=T)
 		if (!movie) mtext("epochs", side=1, line=ifelse((mtext.cex==1.2), 3, 2), cex=mtext.cex)
-		axis(side=2, at=pretty(range(bdm$ptsne$cost)), tick=T, las=1, col=cost.clr[5])
+		axis(side=2, at=pretty(range(bdm$ptsne$cost[1, y])), tick=T, las=1, col=cost.clr[5])
 		mtext("Cost", side=2, line=ifelse((mtext.cex==1.2), 3, 2), col=cost.clr[5], cex=mtext.cex)
 		# layers' average size
 		if (!is.null(bdm$ptsne$size))
 		{
 			par(new = T)
 			size.clr <- brewer.pal(5, 'PuRd')
-			plot(x, bdm$ptsne$size, type = 'l', col = size.clr[5], lwd = 1.5, axes = F, xlab = '', ylab= '', ylim = range(bdm$ptsne$size))
-			axis(side=4, at=pretty(range(bdm$ptsne$size)), tick=T, las=1, col=size.clr[5])
+			plot(x, bdm$ptsne$size[y], type = 'l', col = size.clr[5], lwd = 1.5, axes = F, xlab = '', ylab= '', ylim = range(bdm$ptsne$size[y]))
+			axis(side=4, at=pretty(range(bdm$ptsne$size[y])), tick=T, las=1, col=size.clr[5])
 			mtext("Size", side=4, line=ifelse((mtext.cex==1.2), 3, 1.5), col=size.clr[5], cex=mtext.cex)
 		}
 	}
@@ -106,7 +107,7 @@ ptsne.cost <- function(bdm, offset = 0, movie = F, mtext.cex = 1.2)
 #' bdm.example()
 #' exMap <- bdm.ptsne.plot(exMap)
 
-bdm.ptsne.plot <- function(bdm, ptsne.cex = 0.5, ptsne.bg = '#FFFFFF', class.pltt = NULL, layer = 1)
+bdm.ptsne.plot <- function(bdm, ptsne.cex = 0.5, ptsne.bg = '#FFFFFF', class.lbls = NULL, class.pltt = NULL, layer = 1)
 {
 	if (is.null(bdm$dSet)) bdm.list <- bdm
 	else bdm.list <- list(bdm)
@@ -116,7 +117,7 @@ bdm.ptsne.plot <- function(bdm, ptsne.cex = 0.5, ptsne.bg = '#FFFFFF', class.plt
 	nulL <- lapply(bdm.list, function(bdm)
 	{
 		if (!is.null(bdm$ptsne)) {
-			ptsne.plot(bdm, layer = layer, cex = ptsne.cex, bg = ptsne.bg, pltt = class.pltt)
+			ptsne.plot(bdm, layer = layer, cex = ptsne.cex, bg = ptsne.bg, lbls = class.lbls, pltt = class.pltt)
 		}
 		else {
 			plot.null()
@@ -235,9 +236,12 @@ bdm.wtt.plot <- function(bdm, pakde.pltt = NULL, pakde.lvls = 16, wtt.lwd = 1.0,
 # +++ ptSNE scatterplot (internal)
 # ------------------------------------------------------------------------------
 
-ptsne.plot <- function(bdm, pltt = NULL, cex = 0.3, bg = '#FFFFFF', layer = 1)
+ptsne.plot <- function(bdm, lbls = NULL, pltt = NULL, cex = 0.3, bg = '#FFFFFF', layer = 1)
 {
-	if (!is.null(bdm$lbls)){
+	if (!is.null(lbls)) {
+		L <- lbls
+	}
+	else if (!is.null(bdm$lbls)){
 		L <- bdm$lbls
 	}
 	else {

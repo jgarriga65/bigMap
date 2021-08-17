@@ -8,6 +8,20 @@ my licensing information
 using namespace std;
 
 // ++++
+
+// +++ new-node-center placement factor (dx:cos(pi/4), dy:sin(pi/4))
+// so: deltaCFactor = cos(pi/4) /4
+// where factor 1/4 comes from: dc = node.sz /4 *cos(pi/4)
+static const double deltaCFactor = .176776695;
+
+// +++ maximum tree depth levels
+// in case of duplicate data-points or dist(p, q) extremly small
+// the tree would expand indefinitely trying to fit each single point in a different leaf
+// We avoid this by setting a maximum depth value.
+static const int treeMaxDepth = 12;
+
+// ++++
+
 struct Point{
 	double x;                   // x coordinate
 	double y;                   // y coordinate
@@ -21,20 +35,7 @@ static double sqDist(Point p, Point q) {
 	return std::pow(p.x -q.x, 2) + std::pow(p.y -q.y, 2);
 };
 
-
-// ++++
-
-// +++ new-node-center placement factor (dx:cos(pi/4), dy:sin(pi/4))
-// so: deltaCFactor = cos(pi/4) /4
-// where factor 1/4 comes from: dc = node.sz /4 *cos(pi/4)
-static const double deltaCFactor = .176776695;
-
-// +++ maximum tree depth levels
-// in case of duplicate data-points or dist(p, q) extremly small
-// the tree would expand indefinitely trying to fit each single point in a different leaf
-// We avoid this by setting a maximum depth value.
-static const int treeMaxDepth = 12;
-
+// +++
 
 class Node {
 
@@ -245,7 +246,7 @@ private:
 	};
 
 	void addForce(Point q, Point p, int Np, double qForce[], double* Q) const {
-		double Qqp = 1 /(1 + sqDist(q, p));
+		double Qqp = 1.0 /(1.0 + sqDist(q, p));
 		qForce[0] += Qqp *Qqp *(q.x - p.x) *Np;
 		qForce[1] += Qqp *Qqp *(q.y - p.y) *Np;
 		// update Q-normalization factor

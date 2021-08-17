@@ -6,6 +6,18 @@
 
 using namespace Rcpp;
 
+// sortZidx
+Rcpp::NumericVector sortZidx(unsigned int z, Rcpp::NumericVector zIdx);
+RcppExport SEXP _bigMap_sortZidx(SEXP zSEXP, SEXP zIdxSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< unsigned int >::type z(zSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type zIdx(zIdxSEXP);
+    rcpp_result_gen = Rcpp::wrap(sortZidx(z, zIdx));
+    return rcpp_result_gen;
+END_RCPP
+}
 // thread_affMtx
 double thread_affMtx(unsigned int z_ini, unsigned int z_end, SEXP sexpX, bool isDistance, bool isSparse, SEXP sexpB, SEXP sexpP, SEXP sexpW);
 RcppExport SEXP _bigMap_thread_affMtx(SEXP z_iniSEXP, SEXP z_endSEXP, SEXP sexpXSEXP, SEXP isDistanceSEXP, SEXP isSparseSEXP, SEXP sexpBSEXP, SEXP sexpPSEXP, SEXP sexpWSEXP) {
@@ -39,9 +51,9 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// thread_iter
-Rcpp::List thread_iter(unsigned int z_ini, unsigned int z_end, SEXP sexpP, SEXP sexpW, SEXP sexpY, double sumP, double sumQ, SEXP sexpR, SEXP sexpU, SEXP sexpG, arma::Col<double>& lRate, double alpha);
-RcppExport SEXP _bigMap_thread_iter(SEXP z_iniSEXP, SEXP z_endSEXP, SEXP sexpPSEXP, SEXP sexpWSEXP, SEXP sexpYSEXP, SEXP sumPSEXP, SEXP sumQSEXP, SEXP sexpRSEXP, SEXP sexpUSEXP, SEXP sexpGSEXP, SEXP lRateSEXP, SEXP alphaSEXP) {
+// thread_mIter
+Rcpp::List thread_mIter(unsigned int z_ini, unsigned int z_end, SEXP sexpP, SEXP sexpW, SEXP sexpY, double sumP, double sumQ, SEXP sexpR, SEXP sexpU, SEXP sexpG, double eta, double alpha, double gain);
+RcppExport SEXP _bigMap_thread_mIter(SEXP z_iniSEXP, SEXP z_endSEXP, SEXP sexpPSEXP, SEXP sexpWSEXP, SEXP sexpYSEXP, SEXP sumPSEXP, SEXP sumQSEXP, SEXP sexpRSEXP, SEXP sexpUSEXP, SEXP sexpGSEXP, SEXP etaSEXP, SEXP alphaSEXP, SEXP gainSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -55,9 +67,10 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< SEXP >::type sexpR(sexpRSEXP);
     Rcpp::traits::input_parameter< SEXP >::type sexpU(sexpUSEXP);
     Rcpp::traits::input_parameter< SEXP >::type sexpG(sexpGSEXP);
-    Rcpp::traits::input_parameter< arma::Col<double>& >::type lRate(lRateSEXP);
+    Rcpp::traits::input_parameter< double >::type eta(etaSEXP);
     Rcpp::traits::input_parameter< double >::type alpha(alphaSEXP);
-    rcpp_result_gen = Rcpp::wrap(thread_iter(z_ini, z_end, sexpP, sexpW, sexpY, sumP, sumQ, sexpR, sexpU, sexpG, lRate, alpha));
+    Rcpp::traits::input_parameter< double >::type gain(gainSEXP);
+    rcpp_result_gen = Rcpp::wrap(thread_mIter(z_ini, z_end, sexpP, sexpW, sexpY, sumP, sumQ, sexpR, sexpU, sexpG, eta, alpha, gain));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -262,8 +275,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // sckt_zTSNE
-double sckt_zTSNE(unsigned int thread_rank, unsigned int threads, unsigned int layers, SEXP sexpX, SEXP sexpB, SEXP sexpY, SEXP sexpI, int iters, double nnSize, double theta, arma::Col<double>& lRate, double alpha, bool isDistance, bool isSparse, double exgg);
-RcppExport SEXP _bigMap_sckt_zTSNE(SEXP thread_rankSEXP, SEXP threadsSEXP, SEXP layersSEXP, SEXP sexpXSEXP, SEXP sexpBSEXP, SEXP sexpYSEXP, SEXP sexpISEXP, SEXP itersSEXP, SEXP nnSizeSEXP, SEXP thetaSEXP, SEXP lRateSEXP, SEXP alphaSEXP, SEXP isDistanceSEXP, SEXP isSparseSEXP, SEXP exggSEXP) {
+double sckt_zTSNE(unsigned int thread_rank, unsigned int threads, unsigned int layers, SEXP sexpX, SEXP sexpB, SEXP sexpY, SEXP sexpI, int iters, double nnSize, double theta, double lRate, double alpha, double gain, bool isDistance, bool isSparse);
+RcppExport SEXP _bigMap_sckt_zTSNE(SEXP thread_rankSEXP, SEXP threadsSEXP, SEXP layersSEXP, SEXP sexpXSEXP, SEXP sexpBSEXP, SEXP sexpYSEXP, SEXP sexpISEXP, SEXP itersSEXP, SEXP nnSizeSEXP, SEXP thetaSEXP, SEXP lRateSEXP, SEXP alphaSEXP, SEXP gainSEXP, SEXP isDistanceSEXP, SEXP isSparseSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -277,12 +290,12 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< int >::type iters(itersSEXP);
     Rcpp::traits::input_parameter< double >::type nnSize(nnSizeSEXP);
     Rcpp::traits::input_parameter< double >::type theta(thetaSEXP);
-    Rcpp::traits::input_parameter< arma::Col<double>& >::type lRate(lRateSEXP);
+    Rcpp::traits::input_parameter< double >::type lRate(lRateSEXP);
     Rcpp::traits::input_parameter< double >::type alpha(alphaSEXP);
+    Rcpp::traits::input_parameter< double >::type gain(gainSEXP);
     Rcpp::traits::input_parameter< bool >::type isDistance(isDistanceSEXP);
     Rcpp::traits::input_parameter< bool >::type isSparse(isSparseSEXP);
-    Rcpp::traits::input_parameter< double >::type exgg(exggSEXP);
-    rcpp_result_gen = Rcpp::wrap(sckt_zTSNE(thread_rank, threads, layers, sexpX, sexpB, sexpY, sexpI, iters, nnSize, theta, lRate, alpha, isDistance, isSparse, exgg));
+    rcpp_result_gen = Rcpp::wrap(sckt_zTSNE(thread_rank, threads, layers, sexpX, sexpB, sexpY, sexpI, iters, nnSize, theta, lRate, alpha, gain, isDistance, isSparse));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -313,8 +326,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // mpi_zTSNE
-double mpi_zTSNE(SEXP sexpX, SEXP sexpB, arma::Mat<double>& Y, arma::Col<int> indexes, int iters, double nnSize, double theta, arma::Col<double>& lRate, double alpha, bool isDistance, bool isSparse, double exgg);
-RcppExport SEXP _bigMap_mpi_zTSNE(SEXP sexpXSEXP, SEXP sexpBSEXP, SEXP YSEXP, SEXP indexesSEXP, SEXP itersSEXP, SEXP nnSizeSEXP, SEXP thetaSEXP, SEXP lRateSEXP, SEXP alphaSEXP, SEXP isDistanceSEXP, SEXP isSparseSEXP, SEXP exggSEXP) {
+double mpi_zTSNE(SEXP sexpX, SEXP sexpB, arma::Mat<double>& Y, arma::Col<int> indexes, int iters, double nnSize, double theta, double lRate, double alpha, double gain, bool isDistance, bool isSparse);
+RcppExport SEXP _bigMap_mpi_zTSNE(SEXP sexpXSEXP, SEXP sexpBSEXP, SEXP YSEXP, SEXP indexesSEXP, SEXP itersSEXP, SEXP nnSizeSEXP, SEXP thetaSEXP, SEXP lRateSEXP, SEXP alphaSEXP, SEXP gainSEXP, SEXP isDistanceSEXP, SEXP isSparseSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -325,17 +338,17 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< int >::type iters(itersSEXP);
     Rcpp::traits::input_parameter< double >::type nnSize(nnSizeSEXP);
     Rcpp::traits::input_parameter< double >::type theta(thetaSEXP);
-    Rcpp::traits::input_parameter< arma::Col<double>& >::type lRate(lRateSEXP);
+    Rcpp::traits::input_parameter< double >::type lRate(lRateSEXP);
     Rcpp::traits::input_parameter< double >::type alpha(alphaSEXP);
+    Rcpp::traits::input_parameter< double >::type gain(gainSEXP);
     Rcpp::traits::input_parameter< bool >::type isDistance(isDistanceSEXP);
     Rcpp::traits::input_parameter< bool >::type isSparse(isSparseSEXP);
-    Rcpp::traits::input_parameter< double >::type exgg(exggSEXP);
-    rcpp_result_gen = Rcpp::wrap(mpi_zTSNE(sexpX, sexpB, Y, indexes, iters, nnSize, theta, lRate, alpha, isDistance, isSparse, exgg));
+    rcpp_result_gen = Rcpp::wrap(mpi_zTSNE(sexpX, sexpB, Y, indexes, iters, nnSize, theta, lRate, alpha, gain, isDistance, isSparse));
     return rcpp_result_gen;
 END_RCPP
 }
 // nnSS_chk
-Rcpp::NumericVector nnSS_chk(SEXP sexpX, SEXP sexpB, arma::Col<int> indexes, bool isDistance, bool isSparse, unsigned int nnSize);
+Rcpp::List nnSS_chk(SEXP sexpX, SEXP sexpB, arma::Col<int> indexes, bool isDistance, bool isSparse, unsigned int nnSize);
 RcppExport SEXP _bigMap_nnSS_chk(SEXP sexpXSEXP, SEXP sexpBSEXP, SEXP indexesSEXP, SEXP isDistanceSEXP, SEXP isSparseSEXP, SEXP nnSizeSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
@@ -352,9 +365,10 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
+    {"_bigMap_sortZidx", (DL_FUNC) &_bigMap_sortZidx, 2},
     {"_bigMap_thread_affMtx", (DL_FUNC) &_bigMap_thread_affMtx, 8},
     {"_bigMap_thread_repF", (DL_FUNC) &_bigMap_thread_repF, 5},
-    {"_bigMap_thread_iter", (DL_FUNC) &_bigMap_thread_iter, 12},
+    {"_bigMap_thread_mIter", (DL_FUNC) &_bigMap_thread_mIter, 13},
     {"_bigMap_z_kNP", (DL_FUNC) &_bigMap_z_kNP, 8},
     {"_bigMap_z_hlCorr", (DL_FUNC) &_bigMap_z_hlCorr, 5},
     {"_bigMap_grid_init", (DL_FUNC) &_bigMap_grid_init, 2},

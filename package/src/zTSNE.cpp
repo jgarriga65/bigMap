@@ -27,7 +27,7 @@ using namespace Rcpp;
 
 // Exact/Approx. SOCKET implementation of t-SNE
 // [[Rcpp::export]]
-double sckt_zTSNE(unsigned int thread_rank, unsigned int threads, unsigned int layers, SEXP sexpX, SEXP sexpB, SEXP sexpY, SEXP sexpI, int iters, double nnSize, double theta, arma::Col<double> &lRate, double alpha, bool isDistance, bool isSparse, double exgg)
+double sckt_zTSNE(unsigned int thread_rank, unsigned int threads, unsigned int layers, SEXP sexpX, SEXP sexpB, SEXP sexpY, SEXP sexpI, int iters, double nnSize, double theta, double lRate, double alpha, double gain, bool isDistance, bool isSparse)
 {
 	// current mapping positions
 	Rcpp::XPtr<BigMatrix> bigY(sexpY);
@@ -63,9 +63,9 @@ double sckt_zTSNE(unsigned int thread_rank, unsigned int threads, unsigned int l
 	double thread_Cost = 1.0;
 
 	// . input affinities (P distribution)
-	double* thread_P = (double*) calloc(thread_size *(thread_size -1) /2, sizeof(double));
-	// . indexes of data-point pairs with significant atractive forces
-	unsigned int* thread_W = (unsigned int*) calloc(thread_size *(thread_size -1) /2, sizeof(unsigned int));
+	double* thread_P = (double*) calloc(thread_size *nnSize, sizeof(double));
+	// . neighbors
+	unsigned int* thread_W = (unsigned int*) calloc(thread_size *nnSize, sizeof(unsigned int));
 
 	// +++ Compute affinity matrix
 	affMtx* affmtx = new affMtx(sexpX, sexpB, zIdx, thread_size, nnSize);
@@ -85,11 +85,11 @@ double sckt_zTSNE(unsigned int thread_rank, unsigned int threads, unsigned int l
 	}
 
 	// +++ TSNE instance
-	TSNE* tsne = new TSNE(thread_size, affmtx ->w, 2, iters, theta, lRate.begin(), alpha, affmtx ->zP, exgg);
+	TSNE* tsne = new TSNE(thread_size, nnSize, 2, iters, theta, lRate, alpha, gain, affmtx ->zP);
 	// +++ run t-SNE
 	tsne ->run2D(thread_P, thread_W, thread_Y);
 	// +++ compute cost
-	thread_Cost = tsne ->getCost(thread_P, thread_Y);
+	thread_Cost = tsne ->Cost(thread_P, thread_W, thread_Y);
 
 	// update mapping positions
 	for (unsigned int l = 0, k = 0; l < layers; l++) {
@@ -151,19 +151,20 @@ void updateY(arma::Mat<double>& Y, const arma::Col<int>& I, const Rcpp::List& zM
 
 // Exact/Approx. MPI implementation of t-SNE
 // [[Rcpp::export]]
-double mpi_zTSNE(SEXP sexpX, SEXP sexpB, arma::Mat<double> &Y, arma::Col<int> indexes, int iters, double nnSize, double theta, arma::Col<double> &lRate, double alpha, bool isDistance, bool isSparse, double exgg)
+double mpi_zTSNE(SEXP sexpX, SEXP sexpB, arma::Mat<double> &Y, arma::Col<int> indexes, int iters, double nnSize, double theta, double lRate, double alpha, double gain, bool isDistance, bool isSparse)
 {
 	// unsigned int N = bmL->nrow();
 	unsigned int thread_size = Y.n_rows;
 	// int* zIdx = reinterpret_cast <int*> (I.begin());
 	int* zIdx = indexes.begin();
+
 	// . cost function value
 	double thread_Cost = 1.0;
 
 	// . input affinities (P distribution)
-	double* thread_P = (double*) calloc(thread_size * (thread_size -1) /2, sizeof(double));
-	// . indexes of data-point pairs with significant atractive forces
-	unsigned int* thread_W = (unsigned int*) calloc(thread_size * (thread_size -1) /2, sizeof(unsigned int));
+	double* thread_P = (double*) calloc(thread_size *nnSize, sizeof(double));
+	// . neighbors
+	unsigned int* thread_W = (unsigned int*) calloc(thread_size *nnSize, sizeof(unsigned int));
 
 	// +++ Compute affinity matrix
 	affMtx* affmtx = new affMtx(sexpX, sexpB, zIdx, thread_size, nnSize);
@@ -181,11 +182,11 @@ double mpi_zTSNE(SEXP sexpX, SEXP sexpB, arma::Mat<double> &Y, arma::Col<int> in
 	}
 
 	// +++ TSNE instance
-	TSNE* tsne = new TSNE(thread_size, affmtx ->w, 2, iters, theta, lRate.begin(), alpha, affmtx ->zP, exgg);
+	TSNE* tsne = new TSNE(thread_size, nnSize, 2, iters, theta, lRate, alpha, gain, affmtx ->zP);
 	// +++ run t-SNE
 	tsne ->run2D(thread_P, thread_W, thread_Y);
 	// +++ compute cost
-	thread_Cost = tsne ->getCost(thread_P, thread_Y);
+	thread_Cost = tsne ->Cost(thread_P, thread_W, thread_Y);
 
 	// update mapping positions
 	for (unsigned int i = 0, k = 0; i < thread_size; i++) {

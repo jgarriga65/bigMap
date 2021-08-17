@@ -23,16 +23,22 @@
 
 using namespace std;
 
+// DBL_EPSILON = 1.0e-9 (DBL_MIN = 1.0e-37)
+
+// SHOOT OFF CONDITION CONTROL
+// . minL1
+// static const double minAtrForce = 1.0e-6 /(1.0 +2.0e-12);
+// .minL2 (this one makes sense but does not work either)
+// static const double minAtrForce = std::sqrt(DBL_EPSILON) /(1.0 +2.0 *DBL_EPSILON);
+// .minL3
+// static const double minAtrForce = 2.0 *std::sqrt(DBL_EPSILON) /(1.0 +2.0 *DBL_EPSILON);
+// .minL interval
+static const double lowL = 1.0 /std::sqrt(6.0);
+static const double uppL = 1.0 /std::sqrt(2.0);
+
 // t-SNE constructor
-TSNE::TSNE(unsigned int z, unsigned int w, unsigned int mY, int max_iter, double theta, double* lRate, double alpha, double zP, double exgg) : z(z), w(w), mY(mY), max_iter(max_iter), theta(theta), alpha(alpha), zP(zP), exgg(exgg)
-{
-	// learning rate
-	std::vector<double> eta (mY);
-	for (size_t d = 0; d < mY; d++) eta[d] = lRate[d] *4.0;
-	this ->eta = eta;
-	// DBL_EPSILON = 1.0e-9 (DBL_MIN = 1.0e-37)
-	this ->minL = DBL_EPSILON /4.0;
-}
+TSNE::TSNE(unsigned int z, unsigned int nnSize, unsigned int mY, int max_iter, double theta, double lRate, double alpha, double gain, double zP) : z(z), nnSize(nnSize), mY(mY), max_iter(max_iter), theta(theta), eta(lRate), alpha(alpha), gain(gain), zP(zP)
+{}
 
 // Perform t-SNE (only for 2D embedding !!)
 void TSNE::run2D(double* P, unsigned int* W, double* Y)
@@ -40,35 +46,33 @@ void TSNE::run2D(double* P, unsigned int* W, double* Y)
 	// . gradient forces
 	double* atrF = (double*) calloc(z *mY, sizeof(double));
 	double* repF = (double*) calloc(z *mY, sizeof(double));
-	// . mapping position updates
+	// . position updates
 	double* updY = (double*) calloc(z *mY, sizeof(double));
-	// . learning rate gains
-	double* gain = (double*) calloc(z *mY, sizeof(double));
-	for (unsigned int i = 0; i < z; i++) gain[i] = 1.0;
+	// . position gains
+	double* etaG = (double*) calloc(z *mY, sizeof(double));
+	for (unsigned int k = 0; k < z *mY; k++) etaG[k] = 1.0;
 	// +++ optimization
+	double zQ = .0;
 	for (int iter = 0; iter < max_iter; iter++) {
-		double zQ = .0;
-		if (theta < .33) {
-			zQ = exact_Gradient(P, Y, atrF, repF);
-		} else {
-			zQ = apprx_Gradient(P, W, Y, atrF, repF);
-		}
+		Gradient(P, W, Y, atrF, repF, zQ);
 		// update (with momentum and learning rate)
-		for (unsigned int i = 0, k = 0; i < z; i++){
-			for (unsigned int d = 0; d < mY; d++, k++){
-				// gradient
-				double dY = exgg *atrF[k] /zP -repF[k] /zQ;
-				// learning rate gain
-				if (signbit(dY) != signbit(updY[k])) {
-					gain[k] += .2;
-				}
-				else {
-					gain[k] *= .8;
-					gain[k] += .01;
-				}
-				// update embedding position
-				updY[k] = alpha *updY[k] -eta[d] *gain[k] *dY;
-				Y[k] += updY[k];
+		for (unsigned int i = 0, k = 0; i < z; i++) {
+			for (unsigned int d = 0; d < mY; d++, k++) {
+				// if (std::abs(atrF[k] /zP) > minAtrForce) {
+					double dY = atrF[k] /zP -repF[k] /zQ;
+					if (gain > 0) {
+						if (signbit(dY) != signbit(updY[k])) {
+							etaG[k] += (gain *0.1);
+						}
+						else {
+							etaG[k] *= (1.0 -gain /10.0);
+							etaG[k] += .01;
+						}
+					}
+					// update embedding position
+					updY[k] = alpha *updY[k] -eta *etaG[k] *dY;
+					Y[k] += updY[k];
+				// }
 				// reset attractive/repulsive forces
 				atrF[k] = .0;
 				repF[k] = .0;
@@ -79,121 +83,95 @@ void TSNE::run2D(double* P, unsigned int* W, double* Y)
 	free(atrF); atrF  = NULL;
 	free(repF); repF = NULL;
 	free(updY); updY = NULL;
-	free(gain); gain = NULL;
+	free(etaG); etaG = NULL;
 	return;
 }
 
 // Compute gradient forces of the t-SNE cost function (EXACT)
-double TSNE::exact_Gradient(double* P, double* Y, double* atrF, double* repF)
+double TSNE::Gradient(double* P, unsigned int* W, double* Y, double* atrF, double* repF, double& zQ)
 {
-	double zQ = .0;
 	double L [mY];
-	for(unsigned int i = 0, ij = 0; i < z; i++) {
-		for (unsigned int j = i +1; j < z; j++, ij++) {
-			double Lij = 1.0;
-			for(unsigned int d = 0; d < mY; d++) {
-				L[d] = Y[i *mY +d] -Y[j *mY +d];
-				if (std::abs(L[d]) < minL) {
-					L[d] = (Y[i *mY +d] >Y[j *mY +d]) ? minL : -minL;
+	// attractive forces
+	for(unsigned int i = 0; i < z; i++) {
+		for (unsigned int ni = 0; ni < nnSize; ni++) {
+			if (P[i *nnSize +ni] > 0) {
+				unsigned int j = W[i *nnSize +ni];
+				double Lij = 1.0;
+				for(unsigned int d = 0; d < mY; d++) {
+					L[d] = Y[i *mY +d] -Y[j *mY +d];
+					// if (std::abs(L[d]) < uppL) {
+					// 	L[d] = L[d] > 0 ? uppL : -uppL;
+					// }
+					Lij += L[d] *L[d];
 				}
-				Lij += L[d] *L[d];
-			}
-			double Qij = 1.0 /Lij;
-			for(unsigned int d = 0; d < mY; d++) {
-				double Qd = Qij *L[d];
-				if (P[ij] > 0) {
-					atrF[i *mY +d] += P[ij] *Qd;
-					atrF[j *mY +d] -= P[ij] *Qd;
+				double Qij = 1.0 /Lij;
+				for(unsigned int d = 0; d < mY; d++) {
+					atrF[i *mY +d] += P[i *nnSize +ni] *Qij *L[d];
 				}
-				repF[i *mY +d] += Qij *Qd;
-				repF[j *mY +d] -= Qij *Qd;
 			}
-			zQ += Qij;
 		}
 	}
-	zQ *= 2.0;
-	return zQ;
-}
-
-// Compute gradient forces of the t-SNE cost function (APPRX)
-double TSNE::apprx_Gradient(double* P, unsigned int* W, double* Y, double* atrF, double* repF)
-{
-	// compute attractive forces
-	double L [mY];
-
-	if (w < z) {
-		// this is slower only if w << z
-		for(unsigned int k = 0; k < w; k++) {
-			unsigned int i = W[k] /z;
-			unsigned int j = (unsigned int) W[k] %z;
-			double Lij = 1.0;
-			for(unsigned int d = 0; d < mY; d++){
-				L[d] = Y[i *mY +d] - Y[j *mY +d];
-				if (std::abs(L[d]) < minL) {
-					L[d] = (Y[i *mY +d] >Y[j *mY +d]) ? minL : -minL;
+	// repulsive forces
+	zQ = .0;
+	if (theta < 0.33) {
+		// exact repulsive forces
+		for(unsigned int i = 0; i < z; i++) {
+			for (unsigned int j = i +1; j < z; j++) {
+				double Lij = 1.0;
+				for(unsigned int d = 0; d < mY; d++) {
+					L[d] = Y[i *mY +d] -Y[j *mY +d];
+					// if (std::abs(L[d]) < lowL) {
+					// 	L[d] = L[d] > 0 ? lowL : -lowL;
+					// }
+					Lij += L[d] *L[d];
 				}
-				Lij +=  L[d] *L[d];
-			}
-			unsigned int ij = ijIdx(z, i, j);
-			for(unsigned int d = 0; d < mY; d++) {
-				atrF[i *mY +d] += P[ij] *L[d] /Lij;
-				atrF[j *mY +d] -= P[ij] *L[d] /Lij;
+				double Qij = 1.0 /Lij;
+				for(unsigned int d = 0; d < mY; d++) {
+					double Qd = Qij *L[d];
+					repF[i *mY +d] += Qij *Qd;
+					repF[j *mY +d] -= Qij *Qd;
+				}
+				zQ += Qij;
 			}
 		}
+		zQ *= 2.0;
 	}
 	else {
-		// otherwise (high perplexities) this is faster
-		for(unsigned int i = 0, ij = 0; i < z; i++) {
-			for (unsigned int j = i +1; j < z; j++, ij++) {
-				if (P[ij] > 0) {
-					double Lij = 1.0;
-					for(unsigned int d = 0; d < mY; d++) {
-						L[d] = Y[i *mY +d] -Y[j *mY +d];
-						if (std::abs(L[d]) < minL) {
-							L[d] = (Y[i *mY +d] >Y[j *mY +d]) ? minL : -minL;
-						}
-						Lij += L[d] *L[d];
-					}
-					for(unsigned int d = 0; d < mY; d++) {
-						double Qd = L[d] /Lij;
-						atrF[i *mY +d] += P[ij] *Qd;
-						atrF[j *mY +d] -= P[ij] *Qd;
-					}
-				}
-			}
-		}
+		// apprx. repulsive forces
+		Quadtree* qtree = new Quadtree(Y, z, mY, theta);
+		qtree->repForces(Y, repF, &zQ);
+		delete qtree;
 	}
-
-	// compute repulsive forces
-	double zQ = .0;
-	Quadtree* qtree = new Quadtree(Y, z, mY, theta);
-	qtree->repForces(Y, repF, &zQ);
-	delete qtree;
-	//
-	return zQ;
 }
 
 // Evaluate t-SNE cost function (exactly)
-double TSNE::getCost(double* P, double* Y)
+double TSNE::Cost(double* P, unsigned int* W, double* Y)
 {
 	// thread cost function:
 	// Cost = -\sum_{i!=j} p_ij /zP * log (q_ij /zQ)
-	// Q normalization factor
-	double zQ = .0;
 	// join cross entropy
 	double jxH = .0;
-	for (unsigned int i = 0, ij = 0; i < z; i++) {
-		for (unsigned int j = i +1; j < z; j++, ij++){
-			double Lij = 1.0;
-			for(unsigned int d = 0; d < mY; d++) Lij += std::pow(Y[i *mY +d] -Y[j *mY +d], 2);
-			if (P[ij] > 0) {
-				jxH -= P[ij] *std::log(Lij);
+	for (unsigned int i = 0; i < z; i++) {
+		for (unsigned int ni = 0; ni < nnSize; ni++) {
+			if (P[i *nnSize +ni] > 0) {
+				unsigned int j = W[i *nnSize +ni];
+				double Lij = 1.0;
+				for(unsigned int d = 0; d < mY; d++) Lij += std::pow(Y[i *mY +d] -Y[j *mY +d], 2);
+				jxH -= P[i *nnSize +ni] *std::log(Lij);
 			}
+		}
+	}
+	//
+	double zQ = .0;
+	for(unsigned int i = 0; i < z; i++) {
+		for (unsigned int j = i +1; j < z; j++) {
+			double Lij = 1.0;
+			for(unsigned int d = 0; d < mY; d++) Lij += std::pow(Y[i *mY +d] -Y[j *mY +d], 2.0);
 			zQ += 1.0 /Lij;
 		}
 	}
 	// pseudo-normalized Cost
-	jxH *= 2.0 /zP;
+	jxH *= 1.0 /zP;
 	jxH -= std::log(2.0 *zQ);
 	double Cost = -jxH /std::log(z *(z -1));
 	return Cost;

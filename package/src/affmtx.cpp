@@ -40,7 +40,6 @@ affMtx::affMtx(SEXP sexpX, SEXP sexpB, int* zIdx, unsigned int z, unsigned int n
 	this ->X = reinterpret_cast <double*> (bigX ->matrix()) +offset;
 	this ->nX = bigX ->ncol();
 	this ->mX = bigX ->nrow();
-	this ->w = 0;
 
 	BigMatrix *bigB = reinterpret_cast <BigMatrix*> (R_ExternalPtrAddr(sexpB));
 	offset = bigB ->nrow() *bigB ->col_offset();
@@ -58,127 +57,151 @@ affMtx::affMtx(SEXP sexpX, SEXP sexpB, int* zIdx, unsigned int z, unsigned int n
 // FROM INPUT-DATA
 void affMtx::X2P(double* P, unsigned int* W)
 {
-	std::vector<int> nn(z, 0);
-	for (unsigned int i = 0, ij = 0; i < z; i++) {
-		unsigned int zi = zIdx[i];
+	std::vector<unsigned int> n(z, 0);
+	for (unsigned int zi = 0; zi < z; zi++) {
+		unsigned int i = zIdx[zi];
 		double Xi[mX];
-		for(unsigned int v = 0; v < mX; v++) Xi[v] = X[zi *mX +v];
-		double Bi = B[zi *3 +0];
-		double Zi = B[zi *3 +1];
-		double Li = B[zi *3 +2];
-		for (unsigned int j = i +1; j < z; j++, ij++) {
-			unsigned int zj = zIdx[j];
+		for(unsigned int v = 0; v < mX; v++) Xi[v] = X[i *mX +v];
+		double Bi = B[i *3 +0];
+		double Zi = B[i *3 +1];
+		double Li = B[i *3 +2];
+		for (unsigned int zj = zi +1; zj < z; zj++) {
+			unsigned int j = zIdx[zj];
 			double Lij = .0;
-			for(unsigned int v = 0; v < mX; v++) Lij += pow(Xi[v] -X[zj *mX +v], 2);
-			double Bj = B[zj *3 +0];
-			double Zj = B[zj *3 +1];
-			double Lj = B[zj *3 +2];
-			//
-			if ((Lij <= Li) || (Lij <= Lj)) {
-				if ((nn[i] < nnSize) || (nn[j] < nnSize)) {
-					P[ij]  = std::exp(-Bi *Lij) /Zi;
-					P[ij] += std::exp(-Bj *Lij) /Zj;
-					zP += P[ij];
-					nn[i]++;
-					nn[j]++;
-					W[w] = i *z +j;
-					w++;
-				}
+			for(unsigned int v = 0; v < mX; v++) Lij += pow(Xi[v] -X[j *mX +v], 2);
+			double Bj = B[j *3 +0];
+			double Zj = B[j *3 +1];
+			double Lj = B[j *3 +2];
+			if ((Lij <= Li) && (n[zi] < nnSize)) {
+				unsigned int ij = zi *nnSize +n[zi];
+				P[ij]  = std::exp(-Bi *Lij) /Zi;
+				P[ij] += std::exp(-Bj *Lij) /Zj;
+				zP += P[ij];
+				W[ij] = zj;
+				n[zi]++;
+			}
+			if ((Lij <= Lj) && (n[zj] < nnSize)) {
+				unsigned int ji = zj *nnSize +n[zj];
+				P[ji]  = std::exp(-Bi *Lij) /Zi;
+				P[ji] += std::exp(-Bj *Lij) /Zj;
+				zP += P[ji];
+				W[ji] = zi;
+				n[zj]++;
 			}
 		}
 	}
-	zP *= 2.0;
 }
 
 // transform input similarities into probabilities
 // FROM FULL-DISTANCE-MATRIX
 void affMtx::D2P(double* P, unsigned int* W)
 {
-	std::vector<int> nn(z, 0);
-	for (unsigned int i = 0, ij = 0; i < z; i++) {
-		unsigned int zi = zIdx[i];
-		double Bi = B[zi *3 +0];
-		double Zi = B[zi *3 +1];
-		double Li = B[zi *3 +2];
-		for (unsigned int j = i +1; j < z; j++, ij++) {
-			unsigned int zj = zIdx[j];
-			double Lij = std::pow(X[zi *mX +zj], 2);
-			double Bj = B[zj *3 +0];
-			double Zj = B[zj *3 +1];
-			double Lj = B[zj *3 +2];
-			if ((Lij <= Li) || (Lij <= Lj)) {
-				if ((nn[i] < nnSize) || (nn[j] < nnSize)) {
-					P[ij] += std::exp(-Bi *Lij) /Zi;
-					P[ij] += std::exp(-Bj *Lij) /Zj;
-					zP += P[ij];
-					nn[i]++;
-					nn[j]++;
-					W[w] = i *z +j;
-					w++;
-				}
+	std::vector<unsigned int> n(z, 0);
+	for (unsigned int zi = 0; zi < z; zi++) {
+		unsigned int i = zIdx[zi];
+		double Bi = B[i *3 +0];
+		double Zi = B[i *3 +1];
+		double Li = B[i *3 +2];
+		for (unsigned int zj = zi +1; zj < z; zj++) {
+			unsigned int j = zIdx[zj];
+			double Lij = std::pow(X[i *mX +j], 2);
+			double Bj = B[j *3 +0];
+			double Zj = B[j *3 +1];
+			double Lj = B[j *3 +2];
+			if ((Lij <= Li) && (n[zi] < nnSize)) {
+				unsigned int ij = zi *nnSize +n[zi];
+				P[ij]  = std::exp(-Bi *Lij) /Zi;
+				P[ij] += std::exp(-Bj *Lij) /Zj;
+				zP += P[ij];
+				W[ij] = zj;
+				n[zi]++;
+			}
+			if ((Lij <= Lj) && (n[zj] < nnSize)) {
+				unsigned int ji = zj *nnSize +n[zj];
+				P[ji]  = std::exp(-Bi *Lij) /Zi;
+				P[ji] += std::exp(-Bj *Lij) /Zj;
+				zP += P[ji];
+				W[ji] = zi;
+				n[zj]++;
 			}
 		}
 	}
-	zP *= 2.0;
 }
 
 // transform input euclidean-distances into probabilities
 // FROM SPARSE-MATRIX DATA
 void affMtx::S2P(double* P, unsigned int* W)
 {
-	std::vector<int> nn(z, 0);
-	for (unsigned int i = 0, ij = 0; i < z; i++) {
-		unsigned int zi = zIdx[i];
+	// +++ possible take-home message
+	// . when we have many neighbors at the same distance it can be beneficial
+	// to take whatever information that might help to discern the most
+	// appropiate set of neighbors like e.g. the ordinal sequence for PRIMES
+ 	unsigned int r = 0;
+	std::vector<int> rank(z);
+	std::iota(rank.begin(), rank.end(), r++);
+	std::sort(rank.begin(), rank.end(),
+		[&](int a, int b) {return zIdx[a] < zIdx[b];}
+	);
+	//
+	std::vector<unsigned int> n(z, 0);
+	for (unsigned int ri = 0; ri < z; ri++) {
+		unsigned int zi = rank[ri];
+		unsigned int i = zIdx[zi];
 		double Xi[mX];
-		for(unsigned int v = 0; v < mX; v++) Xi[v] = X[zi *mX +v];
-		double Bi = B[zi *3 +0];
-		double Zi = B[zi *3 +1];
-		double Li = B[zi *3 +2];
-		for (unsigned int j = i +1; j < z; j++, ij++) {
-			unsigned int zj = zIdx[j];
+		for(unsigned int v = 0; v < mX; v++) Xi[v] = X[i *mX +v];
+		double Bi = B[i *3 +0];
+		double Zi = B[i *3 +1];
+		double Li = B[i *3 +2];
+		for (unsigned int rj = ri +1; rj < z; rj++) {
+			unsigned int zj = rank[rj];
+			unsigned int j = zIdx[zj];
 			double Xj[mX];
-			for(unsigned int v = 0; v < mX; v++) Xj[v] = X[zj *mX +v];
+			for(unsigned int v = 0; v < mX; v++) Xj[v] = X[j *mX +v];
 			double Lij = spDist(mX, Xi, Xj);
-			double Bj = B[zj *3 +0];
-			double Zj = B[zj *3 +1];
-			double Lj = B[zj *3 +2];
-			if ((Lij <= Li) || (Lij <= Lj)) {
-				if ((nn[i] < nnSize) || (nn[j] < nnSize)) {
-					P[ij] += std::exp(-Bi *Lij) /Zi;
-					P[ij] += std::exp(-Bj *Lij) /Zj;
-					zP += P[ij];
-					nn[i]++;
-					nn[j]++;
-					W[w] = i *z +j;
-					w++;
-				}
+			double Bj = B[j *3 +0];
+			double Zj = B[j *3 +1];
+			double Lj = B[j *3 +2];
+			if ((Lij <= Li) && (n[zi] < nnSize)) {
+				unsigned int ij = zi *nnSize +n[zi];
+				P[ij]  = std::exp(-Bi *Lij) /Zi;
+				P[ij] += std::exp(-Bj *Lij) /Zj;
+				zP += P[ij];
+				W[ij] = zj;
+				n[zi]++;
+			}
+			if ((Lij <= Lj) && (n[zj] < nnSize)) {
+				unsigned int ji = zj *nnSize +n[zj];
+				P[ji]  = std::exp(-Bi *Lij) /Zi;
+				P[ji] += std::exp(-Bj *Lij) /Zj;
+				zP += P[ji];
+				W[ji] = zi;
+				n[zj]++;
 			}
 		}
 	}
-	zP *= 2.0;
 }
-//
-// void affMtx::S2P(double* P, unsigned int* W)
+
+// void affMtx::S2P_exact(double* P, unsigned int* W)
 // {
 // 	std::vector<double> Ki(z);
 // 	for (unsigned int zi = 0; zi < z; zi++) {
 // 		unsigned int i = zIdx[zi];
 // 		double Xi[mX];
-// 		for(size_t v = 0; v < mX; v++) Xi[v] = X[i *mX +v];
+// 		for(unsigned int v = 0; v < mX; v++) Xi[v] = X[i *mX +v];
 // 		double Bi = B[i *3 +0];
 // 		double Zi = B[i *3 +1];
-// 		double Li = 32.0 /Bi;
+// 		double Li = B[i *3 +2];
 // 		for (unsigned int zj = 0; zj < z; zj++) {
 // 			Ki[zj] = .0;
 // 			unsigned int j = zIdx[zj];
 // 			if (j != i) {
 // 				double Xj[mX];
-// 				for(size_t v = 0; v < mX; v++) Xj[v] = X[j *mX +v];
+// 				for(unsigned int v = 0; v < mX; v++) Xj[v] = X[j *mX +v];
 // 				double Lij = spDist(mX, Xi, Xj);
-// 				if (Lij <= Li) Ki[zj] = std::exp(-Bi *Lij) /Zi;
+// 				if (Lij <= Li) Ki[zj] = std::exp(-Bi *Lij) /Zi +std::exp(-B[j *3] *Lij) /B[j *3 +1];
 // 			}
 // 		}
-// 		row_affinity(z, nnSize, i, Ki.data(), P, W, w, zP);
+// 		row_affinity(z, nnSize, i, Ki.data(), P, W, zP);
 // 	}
 // }
 
@@ -269,3 +292,28 @@ void affMtx::bh_S2P(unsigned int z_ini, unsigned int z_end, double* P, unsigned 
 		}
 	}
 }
+
+// [[Rcpp::export]]
+Rcpp::NumericVector sortZidx(unsigned int z, Rcpp::NumericVector zIdx)
+{
+ 	unsigned int r = 0;
+	std::vector<int> rank(z);
+	std::iota(rank.begin(), rank.end(), r++);
+	std::sort(rank.begin(), rank.end(),
+		[&](int a, int b) {return zIdx[a] < zIdx[b];}
+	);
+	Rcpp::NumericVector zIdx_sorted(z);
+	for (unsigned int r = 0; r < z; r++) zIdx_sorted[r] = zIdx[rank[r]];
+	return zIdx_sorted;
+}
+
+/***R
+check1 <- function(n, z)
+{
+	zIdx <- sample(seq(n))[1:z]
+	zIdx_sorted <- sortZidx(z, zIdx)
+	zIdx_ret <- cbind(zIdx, zIdx_sorted)
+	return(zIdx_ret)
+}
+
+*/

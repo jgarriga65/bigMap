@@ -19,26 +19,23 @@ public:
 
 	unsigned int mY;					// embedding dimensions
 	unsigned int z;						// thread size
-	unsigned int w;						// approx. gradient size
+	unsigned int nnSize;				// nearest neighbors size
 
 	int max_iter;
-	double theta, alpha, zP, exgg, minL;
-	std::vector<double> eta;
+	double theta, eta, alpha, gain;
+	double zP;
 
 	// constructor
-	TSNE(unsigned int z, unsigned int w, unsigned int mY, int max_iter, double theta, double* lRate, double alpha, double zP, double exgg);
+	TSNE(unsigned int z, unsigned int nnSize, unsigned int mY, int max_iter, double theta, double lRate, double alpha, double gain, double zP);
 
 	// run
 	void run2D(double* P, unsigned int* W, double* Y);
 	// compute Cost
-	double getCost(double* P, double* Y);
-	// update eRange
-	void row_Gradient(double* P, unsigned int* W, double* Y, double* thread_Y, unsigned int i, unsigned int zi);
+	double Cost(double* P, unsigned int* W, double* Y);
 
 private:
 	// compute gradient forces
-	double exact_Gradient(double* P, double* Y, double* atrF, double* repF);
-	double apprx_Gradient(double* P, unsigned int* W, double* Y, double* atrF, double* repF);
+	double Gradient(double* P, unsigned int* W, double* Y, double* atrF, double* repF, double& zQ);
 };
 
 #endif

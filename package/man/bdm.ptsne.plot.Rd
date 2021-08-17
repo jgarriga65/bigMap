@@ -8,6 +8,7 @@ bdm.ptsne.plot(
   bdm,
   ptsne.cex = 0.5,
   ptsne.bg = "#FFFFFF",
+  class.lbls = NULL,
   class.pltt = NULL,
   layer = 1
 )
