@@ -196,13 +196,8 @@ Rcpp::List thread_mIter(unsigned int z_ini, unsigned int z_end, SEXP sexpP, SEXP
 			// if (std::abs(atrF[d] /sumP) > minAtrForce) {
 				double dY = atrF[d] /sumP -repF[k] /sumQ;
 				if (gain > .0) {
-					if (signbit(dY) != signbit(U[k])) {
-						G[k] += (gain *.1);
-					}
-					else {
-						G[k] *= (1.0 -gain /10.0);
-						G[k] += .01;
-					}
+					if (signbit(dY) != signbit(U[k])) G[k] += (gain *.1);
+					else G[k] *= (1.0 -gain /10.0);
 				}
 				U[k] = alpha *U[k] -eta *G[k] *dY;
 				new_Y[k] += U[k];

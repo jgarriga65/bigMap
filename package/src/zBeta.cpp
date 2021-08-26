@@ -125,7 +125,7 @@ double entropy(std::vector<double> Li, double Bi, double &Zi, int qNN)
 	// 2. for large Bi and largest values of Li[j], Kij might vanish and so Zi
 	// 3. all qNN neighbours at the same distance makes Bi increase untill
 	// they all fall out of the neighborhood making Zi = 0
-	if (Zi > qNN *1e-9) {
+	if (Zi > 1e-6) {
 		Hi *= Bi /Zi;
 		Hi += std::log(Zi);
 	}

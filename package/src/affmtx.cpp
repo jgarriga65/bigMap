@@ -132,28 +132,15 @@ void affMtx::D2P(double* P, unsigned int* W)
 // FROM SPARSE-MATRIX DATA
 void affMtx::S2P(double* P, unsigned int* W)
 {
-	// +++ possible take-home message
-	// . when we have many neighbors at the same distance it can be beneficial
-	// to take whatever information that might help to discern the most
-	// appropiate set of neighbors like e.g. the ordinal sequence for PRIMES
- 	unsigned int r = 0;
-	std::vector<int> rank(z);
-	std::iota(rank.begin(), rank.end(), r++);
-	std::sort(rank.begin(), rank.end(),
-		[&](int a, int b) {return zIdx[a] < zIdx[b];}
-	);
-	//
 	std::vector<unsigned int> n(z, 0);
-	for (unsigned int ri = 0; ri < z; ri++) {
-		unsigned int zi = rank[ri];
+	for (unsigned int zi = 0; zi < z; zi++) {
 		unsigned int i = zIdx[zi];
 		double Xi[mX];
 		for(unsigned int v = 0; v < mX; v++) Xi[v] = X[i *mX +v];
 		double Bi = B[i *3 +0];
 		double Zi = B[i *3 +1];
 		double Li = B[i *3 +2];
-		for (unsigned int rj = ri +1; rj < z; rj++) {
-			unsigned int zj = rank[rj];
+		for (unsigned int zj = zi +1; zj < z; zj++) {
 			unsigned int j = zIdx[zj];
 			double Xj[mX];
 			for(unsigned int v = 0; v < mX; v++) Xj[v] = X[j *mX +v];
@@ -180,6 +167,57 @@ void affMtx::S2P(double* P, unsigned int* W)
 		}
 	}
 }
+
+// void affMtx::S2P_ordered(double* P, unsigned int* W)
+// {
+// 	// +++ possible take-home message
+// 	// . when we have many neighbors at the same distance it can be beneficial
+// 	// to take whatever information that might help to discern the most
+// 	// appropiate set of neighbors like e.g. the ordinal sequence for PRIMES
+//  	unsigned int r = 0;
+// 	std::vector<int> rank(z);
+// 	std::iota(rank.begin(), rank.end(), r++);
+// 	std::sort(rank.begin(), rank.end(),
+// 		[&](int a, int b) {return zIdx[a] < zIdx[b];}
+// 	);
+// 	//
+// 	std::vector<unsigned int> n(z, 0);
+// 	for (unsigned int ri = 0; ri < z; ri++) {
+// 		unsigned int zi = rank[ri];
+// 		unsigned int i = zIdx[zi];
+// 		double Xi[mX];
+// 		for(unsigned int v = 0; v < mX; v++) Xi[v] = X[i *mX +v];
+// 		double Bi = B[i *3 +0];
+// 		double Zi = B[i *3 +1];
+// 		double Li = B[i *3 +2];
+// 		for (unsigned int rj = ri +1; rj < z; rj++) {
+// 			unsigned int zj = rank[rj];
+// 			unsigned int j = zIdx[zj];
+// 			double Xj[mX];
+// 			for(unsigned int v = 0; v < mX; v++) Xj[v] = X[j *mX +v];
+// 			double Lij = spDist(mX, Xi, Xj);
+// 			double Bj = B[j *3 +0];
+// 			double Zj = B[j *3 +1];
+// 			double Lj = B[j *3 +2];
+// 			if ((Lij <= Li) && (n[zi] < nnSize)) {
+// 				unsigned int ij = zi *nnSize +n[zi];
+// 				P[ij]  = std::exp(-Bi *Lij) /Zi;
+// 				P[ij] += std::exp(-Bj *Lij) /Zj;
+// 				zP += P[ij];
+// 				W[ij] = zj;
+// 				n[zi]++;
+// 			}
+// 			if ((Lij <= Lj) && (n[zj] < nnSize)) {
+// 				unsigned int ji = zj *nnSize +n[zj];
+// 				P[ji]  = std::exp(-Bi *Lij) /Zi;
+// 				P[ji] += std::exp(-Bj *Lij) /Zj;
+// 				zP += P[ji];
+// 				W[ji] = zi;
+// 				n[zj]++;
+// 			}
+// 		}
+// 	}
+// }
 
 // void affMtx::S2P_exact(double* P, unsigned int* W)
 // {

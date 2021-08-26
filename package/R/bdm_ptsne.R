@@ -127,6 +127,7 @@ sckt.ptsne <- function(cl, bdm, progress)
 	ppx      <- bdm$ppx$ppx
 	theta    <- bdm$ptsne$theta
 	momentum <- bdm$ptsne$momentum
+	qDecay   <- bdm$ptsne$qDecay
 	gain     <- bdm$ptsne$gain
 	#
 	chnk.brks <- round(seq(1, bdm$nX +1, length.out = (threads +1)), 0)
@@ -145,7 +146,7 @@ sckt.ptsne <- function(cl, bdm, progress)
 	bdm$ptsne$iters <- iters
 
 	# export setup parameters
-	clusterExport(cl, c('layers', 'nnSize', 'zSize', 'theta', 'momentum', 'gain'), envir = environment())
+	clusterExport(cl, c('layers', 'nnSize', 'zSize', 'theta', 'gain'), envir = environment())
 	clusterExport(cl, c('progress'), envir = environment())
 
 	# initial mapping (by default, random circular embedding of radius 1)
@@ -163,7 +164,9 @@ sckt.ptsne <- function(cl, bdm, progress)
 
 	# learning Rate
 	lRate <- 2.0 *(eSize[1] +1.0 /eSize[1]) *log(zSize *nnSize)
-	clusterExport(cl, c('lRate'), envir = environment())
+	# momentum
+	alpha <- momentum
+	clusterExport(cl, c('lRate', 'alpha'), envir = environment())
 
 	# row sampling indexes (substract 1 to convert to C++ indexes !!)
 	Ibm <- big.matrix(bdm$nX, 1, type='integer')
@@ -230,7 +233,12 @@ sckt.ptsne <- function(cl, bdm, progress)
 		eSize[(e +1)] <- sqrt(sum(apply(apply(Ybm[, 1:2], 2, range), 2, diff)**2))
 		# learning Rate
 		lRate <- 2.0 *(eSize[(e +1)] +1.0 /eSize[(e +1)]) *log(zSize *nnSize)
-		clusterExport(cl, c('lRate'), envir = environment())
+		# momentum
+		if (qDecay)
+			alpha <- momentum *(1 -e /epochs)**2
+		else
+			alpha <- momentum *(1 -e /epochs)
+		clusterExport(cl, c('lRate', 'alpha'), envir = environment())
 		# report status
 		if (progress >=0) {
 			avgCost <- mean(Cbm[, (e +1)])
@@ -268,8 +276,6 @@ sckt.ztsne <- function()
 		}
 	}
 	else {
-		alpha <- momentum *(1 -epoch /epochs)
-		# egain <- gain *(1- epoch /epochs)**2
 		zCost <- sckt_zTSNE(thread.rank, threads, layers, Xbm@address, Bbm@address, Ybm@address, Ibm@address, iters, nnSize, theta, lRate, alpha, gain, is.distance, is.sparse)
 		Cbm[thread.rank, epoch] <- zCost
 	}
@@ -287,6 +293,7 @@ mpi.ptsne <- function(cl, bdm, progress)
 	layers   <- bdm$ptsne$layers
 	theta    <- bdm$ptsne$theta
 	momentum <- bdm$ptsne$momentum
+	qDecay   <- bdm$ptsne$qDecay
 	gain     <- bdm$ptsne$gain
 	#
 	chnk.brks <- round(seq(1, bdm$nX +1, length.out = (threads +1)), 0)
@@ -305,7 +312,7 @@ mpi.ptsne <- function(cl, bdm, progress)
 	bdm$ptsne$iters <- iters
 
 	# export ptSNE setup parameters
-	clusterExport(cl, c('layers', 'nnSize', 'zSize', 'theta', 'momentum', 'gain'), envir = environment())
+	clusterExport(cl, c('layers', 'nnSize', 'zSize', 'theta', 'gain'), envir = environment())
 	clusterExport(cl, c('progress'), envir = environment())
 
 	# thread segments: row/col indexes in Y
@@ -339,7 +346,9 @@ mpi.ptsne <- function(cl, bdm, progress)
 
 	# learning Rate
 	lRate <- 2.0 *(eSize[1] +1.0 /eSize[1]) *log(zSize *nnSize)
-	clusterExport(cl, c('lRate'), envir = environment())
+	# momentum
+	alpha <- momentum
+	clusterExport(cl, c('lRate', 'alpha'), envir = environment())
 
 	# special initialization for thread.rank != 0
 	clusterEvalQ(cl,
@@ -366,7 +375,7 @@ mpi.ptsne <- function(cl, bdm, progress)
 	# update lRate to workers
 	eSize[1] <- sqrt(sum(apply(apply(Y[, 1:2], 2, range), 2, diff)**2))
 	lRate <- 2.0 *(eSize[1] +1.0 /eSize[1]) *log(zSize *nnSize)
-	clusterExport(cl, c('lRate'), envir = environment())
+	clusterExport(cl, c('lRate', 'alpha'), envir = environment())
 
 	# +++ reset number of iterations on workers
 	clusterExport(cl, c('epochs', 'iters'), envir = environment())
@@ -396,7 +405,12 @@ mpi.ptsne <- function(cl, bdm, progress)
 		eSize[(e +1)] <- sqrt(sum(apply(apply(Y[, 1:2], 2, range), 2, diff)**2))
 		# learning Rate
 		lRate <- 2.0 *(eSize[(e +1)] +1.0 /eSize[(e +1)]) *log(zSize *nnSize)
-		clusterExport(cl, c('lRate'), envir = environment())
+		# momentum
+		if (qDecay)
+			alpha <- momentum *(1 -e /epochs)**2
+		else
+			alpha <- momentum *(1 -e /epochs)
+		clusterExport(cl, c('lRate', 'alpha'), envir = environment())
 		# report status
 		if (progress >= 0) {
 			avgCost <- mean(eCost[, e+1])
@@ -427,8 +441,6 @@ mpi.ztsne <- function(zChnk)
 	if (thread.rank != 0) {
 		w$zI <-  zChnk[, 1]
 		w$zY <- zChnk[, 2:3]
-		alpha <- momentum *(1 -epoch/epochs)
-		# egain <- gain *(1- epoch /epochs)**2
 		mpi_zTSNE(Xbm@address, Bbm@address, w$zY, w$zI, iters, nnSize, theta, lRate, alpha, gain, is.distance, is.sparse)
 	}
 }

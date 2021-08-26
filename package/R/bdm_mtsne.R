@@ -3,16 +3,16 @@
 # +++ mt-SNE and refinement t-SNE with naive parallelization
 # --------------------------------------------------------------------------------
 
-bdm.mtsne <- function(dSet.data, dSet.name = NULL, is.distance = F, is.sparse = F, normalize = F, dSet.labels = NULL, ppx = 100, xppx = 3.0, iters = 200, theta = .5, momentum = 0.5, gain = 1.0, threads = 4, infoRate = 25, logSize = T, reset = T, movie = F, mpi.cl = NULL)
+bdm.mtsne <- function(dSet.data, dSet.name = NULL, is.distance = F, is.sparse = F, normalize = F, dSet.labels = NULL, ppx = 100, xppx = 3.0, iters = 200, theta = .5, gain = 2.0, momentum = .8, qDecay = T, threads = 4, infoRate = 25, logSize = T, reset = F, movie = F, mpi.cl = NULL)
 {
 	m <- bdm.init(dSet.data, dSet.name = dSet.name, is.distance = is.distance, is.sparse = is.sparse, normalize = normalize, ppx = ppx, xppx = xppx, dSet.labels = dSet.labels, threads = threads, mpi.cl = mpi.cl)
 	m$ppx <- m$ppx[[1]]
 
-	m.list <- bdm.rtsne(dSet.data, m, ppx = ppx, xppx = xppx, iters = iters, theta = theta, momentum = momentum, gain = gain, threads = threads, infoRate = infoRate, logSize = logSize, reset = T, movie = movie, mpi.cl = mpi.cl)
+	m.list <- bdm.rtsne(dSet.data, m, ppx = ppx, xppx = xppx, iters = iters, theta = theta, momentum = momentum, qDecay = qDecay, gain = gain, threads = threads, infoRate = infoRate, logSize = logSize, reset = T, movie = movie, mpi.cl = mpi.cl)
 	return(m.list[[2]])
 }
 
-bdm.rtsne <- function(dSet.data, m, ppx, xppx = 3.0, iters = 100, theta = .5, momentum = 0.5, gain = 1.0, threads = 4, infoRate = 25, logSize = T, reset = T, movie = F, mpi.cl = NULL)
+bdm.rtsne <- function(dSet.data, m, ppx, xppx = 3.0, iters = 100, theta = .5, gain = 2.0, momentum = .8, qDecay = T, threads = 4, infoRate = 25, logSize = T, reset = F, movie = F, mpi.cl = NULL)
 {
 	m.list <- list(m)
 	# +++ start cluster
@@ -67,7 +67,7 @@ bdm.rtsne <- function(dSet.data, m, ppx, xppx = 3.0, iters = 100, theta = .5, mo
 	# +++ set movie on/off
 	if (movie == T) m$progress <- list()
 	# +++ start m-tsne
-	m$ptsne <- list(threads = 1, layers = 1, mtsne.threads = threads, iters = iters, theta = theta, momentum = momentum)
+	m$ptsne <- list(threads = 1, layers = 1, mtsne.threads = threads, iters = iters, theta = theta, gain = gain, momentum = momentum)
 	t0 <- Sys.time()
 	info.head()
 	m$t$mtsne <- system.time({
@@ -78,7 +78,12 @@ bdm.rtsne <- function(dSet.data, m, ppx, xppx = 3.0, iters = 100, theta = .5, mo
 			# (no need to transpose as each thread will use a local copy!!!)
 			eSize <- sqrt(sum(apply(apply(Y, 2, range), 2, diff)**2))
 			lRate <- 2.0 *(eSize +1.0 /eSize) *logSize
-			alpha <- momentum *(1 -it /iters)
+			if (qDecay) {
+				alpha <- momentum *(1 -it /iters)**2
+			}
+			else {
+				alpha <- momentum *(1 -it /iters)
+			}
 			clusterExport(cl, c('lRate', 'alpha'), envir = environment())
 			itSize[it] <- eSize
 			Ydata.exp(cl, Y)

@@ -145,7 +145,7 @@ bdm.init <- function(dSet.data, dSet.name = NULL, is.distance = F, is.sparse = F
 #' # --- plot ptSNE output
 #' bdm.ptsne.plot(exMap)
 
-bdm.ptsne <- function(data, bdm, Y.init = NULL, theta = 0.5, momentum = 0.5, gain = 1.0, info = 0, threads = 4, mpi.cl = NULL, layers = 2)
+bdm.ptsne <- function(data, bdm, Y.init = NULL, theta = 0.5, momentum = 0.8, qDecay = T, gain = 2.0, info = 0, threads = 4, mpi.cl = NULL, layers = 2)
 {
 	# +++ sanity check
 	if (!is.null(Y.init) && (ncol(Y.init) != 2 *layers)) {
@@ -175,7 +175,7 @@ bdm.ptsne <- function(data, bdm, Y.init = NULL, theta = 0.5, momentum = 0.5, gai
 		print(bdm$t$dataExport)
 	}
 	#
-	bdm$ptsne <- list(threads = threads, layers = layers, theta = theta, momentum = momentum, gain = gain, Y = Y.init)
+	bdm$ptsne <- list(threads = threads, layers = layers, theta = theta, gain = gain, momentum = momentum, qDecay = qDecay, Y = Y.init)
 	#
 	bdm <- ptsne.get(cl, bdm, info)
 	if (length(bdm) == 1) bdm <- bdm[[1]]

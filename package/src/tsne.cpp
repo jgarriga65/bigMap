@@ -33,8 +33,8 @@ using namespace std;
 // .minL3
 // static const double minAtrForce = 2.0 *std::sqrt(DBL_EPSILON) /(1.0 +2.0 *DBL_EPSILON);
 // .minL interval
-static const double lowL = 1.0 /std::sqrt(6.0);
-static const double uppL = 1.0 /std::sqrt(2.0);
+// static const double lowL = 1.0 /std::sqrt(6.0);
+// static const double uppL = 1.0 /std::sqrt(2.0);
 
 // t-SNE constructor
 TSNE::TSNE(unsigned int z, unsigned int nnSize, unsigned int mY, int max_iter, double theta, double lRate, double alpha, double gain, double zP) : z(z), nnSize(nnSize), mY(mY), max_iter(max_iter), theta(theta), eta(lRate), alpha(alpha), gain(gain), zP(zP)
@@ -61,13 +61,10 @@ void TSNE::run2D(double* P, unsigned int* W, double* Y)
 				// if (std::abs(atrF[k] /zP) > minAtrForce) {
 					double dY = atrF[k] /zP -repF[k] /zQ;
 					if (gain > 0) {
-						if (signbit(dY) != signbit(updY[k])) {
-							etaG[k] += (gain *0.1);
-						}
-						else {
-							etaG[k] *= (1.0 -gain /10.0);
-							etaG[k] += .01;
-						}
+						// step size is reset at each new epoch
+						// thus it must be greater here than in mtsne.cpp
+						if (signbit(dY) != signbit(updY[k])) etaG[k] += (gain *.1);
+						else etaG[k] *= (1.0 -gain /10.0);
 					}
 					// update embedding position
 					updY[k] = alpha *updY[k] -eta *etaG[k] *dY;
@@ -99,9 +96,6 @@ double TSNE::Gradient(double* P, unsigned int* W, double* Y, double* atrF, doubl
 				double Lij = 1.0;
 				for(unsigned int d = 0; d < mY; d++) {
 					L[d] = Y[i *mY +d] -Y[j *mY +d];
-					// if (std::abs(L[d]) < uppL) {
-					// 	L[d] = L[d] > 0 ? uppL : -uppL;
-					// }
 					Lij += L[d] *L[d];
 				}
 				double Qij = 1.0 /Lij;
@@ -120,9 +114,6 @@ double TSNE::Gradient(double* P, unsigned int* W, double* Y, double* atrF, doubl
 				double Lij = 1.0;
 				for(unsigned int d = 0; d < mY; d++) {
 					L[d] = Y[i *mY +d] -Y[j *mY +d];
-					// if (std::abs(L[d]) < lowL) {
-					// 	L[d] = L[d] > 0 ? lowL : -lowL;
-					// }
 					Lij += L[d] *L[d];
 				}
 				double Qij = 1.0 /Lij;
