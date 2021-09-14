@@ -5,13 +5,13 @@ Big data mapping with paralellized t-SNE
 
 ##### 1. From within R (easiest)
 
-\> devtools::install_github('jgarriga65/bigMap/package')
+\> devtools::install_github('jgarriga65/bigMap')
 
 or you can use package *remotes* as well,
 
 \> install.packages('remotes')
 
-\> remotes::install_github('jgarriga65/bigMap/package')
+\> remotes::install_github('jgarriga65/bigMap')
 
 ##### 2. Download the package source tarball
 
