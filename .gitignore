@@ -1,0 +1,15 @@
+
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+.Rbuildignore
+
+./src/*.o
+./src/*.so
+./src/*.dll
+
+*.Rproj
+
+Rplots.pdf
+

@@ -9,18 +9,18 @@ bdm.optk.s2nr(data, bdm, info = T, plot.optk = T, ret.optk = F, layer = 1)
 \arguments{
 \item{data}{Input data (a matrix, a big.matrix or a .csv file name).}
 
-\item{bdm}{A clustered \var{bdm} instance (\var{i.e.} all up-stream steps performed: \code{bdm.ptse(), bdm.pakde() and bdm.wtt()}.}
+\item{bdm}{A \var{bdm} data mapping instance.}
 
-\item{info}{Default value is \code{info = TRUE}. If TRUE, all merging steps are shown.}
+\item{info}{Default value is \var{info = TRUE}. If TRUE, all merging steps are shown.}
 
-\item{plot.optk}{Default value is \code{plot.optk = TRUE}. If TRUE, this function plots the S2NR measure versus the number of clusters.}
+\item{plot.optk}{Default value is \var{plot.optk = TRUE}, i.e. the function plots the S2NR measure versus the number of clusters.}
 
-\item{ret.optk}{Default value is \code{ret.optk = FALSE}. For large datasets this computation can take a while, so it can be saved. If TRUE, the function returns a \var{bdm} instance with S2NR attached.}
+\item{ret.optk}{Default value is \var{ret.optk = FALSE}. For large datasets this computation can take a while, so it can be saved. If TRUE, the S2NR computation is saved and returned along with a \var{bdm} data mapping instance.}
 
-\item{layer}{The \var{bdm$ptsne} layer to be used. Default value is \code{layer = 1}.}
+\item{layer}{The ptSNE output layer. Default value is \var{layer = 1}.}
 }
 \value{
-None if \code{ret.optk = FALSE}. Else, a copy of the input \var{bdm} instance with new element \var{bdm$optk} (a matrix).
+None if \var{ret.optk = FALSE}, else, a \var{bdm} data mapping instance.
 }
 \description{
 Performs a recursive merging of clusters based on minimum loss of signal-to-noise-ratio (S2NR). The S2NR is the explained/unexplained variance ratio measured in the high dimensional space based on the given low dimensional clustering. Merging is applied recursively until reaching a configuration of only 2 clusters and the S2NR is measured at each step.
@@ -28,12 +28,12 @@ Performs a recursive merging of clusters based on minimum loss of signal-to-nois
 \details{
 The underlying heuristic is that neigbouring clusters in the embedding correspond to close clusters in the high dimensional space, \var{i.e.} this merging heuristic is based on the spatial distribution of clusters. For each cluster (child cluster) we choose the neighboring cluster with steepest gradient along their common border (father cluster). Thus, we get a set of pairs of clusters (child/father) to be potentially merged. Given this set of candidates, the merging is performed recursively choosing, at each step, the pair of child/father clusters that results in a minimum loss of S2NR.
 Typically some clusters dominate over all of their neighboring clusters. These clusters have no \var{father}. Thus, once all posible mergings have been performed we reach a \var{blocked} state where only the dominant clusters remain. This situation identifies a hierarchy level in the clustering. When this situation is reached, the algorithm starts a new merging round, identifying the child/father relations at that level of the hierarchy. The process stops when only two clusters remain.
-Usually, the clustering hierarchy is clearly depicted by singular points in the S2NR function. This is a hint that the low dimensional clustering configuration is an image of a hierarchycal configuration in the high dimensional space. See \code{bdm.optk.plot()}.
+Usually, the clustering hierarchy is clearly depicted by singular points in the S2NR function. This is a hint that the low dimensional clustering configuration is an image of a hierarchycal configuration in the high dimensional space. See \var{bdm.optk.plot()}.
 }
 \examples{
 
 # --- load mapped dataset
 bdm.example()
-# --- compute optimal number of clusters and attach the computation
+# --- compute the optimal number of clusters and plot the S2NR
 bdm.optk.s2nr(ex$data, ex$map, plot.optk = TRUE, ret.optk = FALSE)
 }

@@ -6,6 +6,11 @@
 
 using namespace Rcpp;
 
+#ifdef RCPP_USE_GLOBAL_ROSTREAM
+Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
+Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
+#endif
+
 // thread_affMtx
 double thread_affMtx(unsigned int z_ini, unsigned int z_end, SEXP sexpX, bool isDistance, bool isSparse, SEXP sexpB, SEXP sexpP, SEXP sexpW);
 RcppExport SEXP _bigMap_thread_affMtx(SEXP z_iniSEXP, SEXP z_endSEXP, SEXP sexpXSEXP, SEXP isDistanceSEXP, SEXP isSparseSEXP, SEXP sexpBSEXP, SEXP sexpPSEXP, SEXP sexpWSEXP) {
