@@ -8,6 +8,7 @@ bdm.ptsne.plot(
   bdm,
   ptsne.cex = 0.5,
   ptsne.bg = "#FFFFFF",
+  class.lbls = NULL,
   class.pltt = NULL,
   layer = 1
 )
@@ -18,6 +19,8 @@ bdm.ptsne.plot(
 \item{ptsne.cex}{The size of the mapped data-points in the ptSNE plot. Default value is \code{ptsne.cex = 0.5}.}
 
 \item{ptsne.bg}{The background colour of the ptSNE plot. Default value is \code{ptsne.bg = #FFFFFF} (white).}
+
+\item{class.lbls}{A vector of class labels to show in the ptSNE plot. Default value is \code{class.lbls = NULL}. If \code{is.null(class.lbls)} and \code{!is.null(bdm$lbls)} the later will be used. If \code{!is.null(bdm$lbls)} and the clustering is performed (i.e. \code{!is.null(bdm$wtt)}) cluster labels are used by default.}
 
 \item{class.pltt}{A colour palette to show class labels in the ptSNE plot. If \code{!is.null(bdm$wtt)} cluster labels are used by default, else if \code{!is.null(bdm$lbls)} are used by default. If \code{ptsne.pltt = NULL} (default value) the default palette is used.}
 
@@ -32,5 +35,5 @@ Plot ptSNE (low-dimensional embedding)
 \examples{
 
 bdm.example()
-exMap <- bdm.ptsne.plot(exMap)
+bdm.ptsne.plot(ex$map)
 }

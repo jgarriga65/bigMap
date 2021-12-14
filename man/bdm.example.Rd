@@ -7,19 +7,19 @@
 bdm.example()
 }
 \value{
-An example \var{bdm} instance named \var{exMap}.
+An example dataset named \code{ex}
 }
 \description{
-Loads an example of a mapping of a dataset.
+Loads a mapping example.
 }
 \details{
-A \var{bdm} instance is a list with elements: \var{$dSet} a name identifying the dataset (\code{bdm.fName()} use this name to generate a default file name); \var{$data} a matrix with raw data; \var{$lbls} a vector of datapoint labels (in case they are known); \var{$N} the dataset size; \var{$is.distance} a logical value that is set to TRUE when the raw data is a distance matrix. Downstream steps of the mapping protocol will add more elements to the list.
+Object \code{ex} is a list with elements: \var{ex$data} a matrix with raw data; \var{ex$labels} a vector of datapoint labels; \var{ex$map} is a \code{bdm} instance: a list with the results of the mapping protocol.
 
-This example is based on a small synthetic dataset with \code{n = 5000} observations drawn from a 4-variate Gaussian Mixture Model (GMM) with 16 Gaussian components.
+This example is based on a small synthetic dataset with \code{n = 5000} observations drawn from a 4-variate Gaussian Mixture Model (GMM) with 16 Gaussian components with random means and variances.
 }
 \examples{
 
 # --- load example dataset
 bdm.example()
-str(exMap)
+str(ex)
 }

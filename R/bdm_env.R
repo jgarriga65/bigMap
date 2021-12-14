@@ -26,18 +26,18 @@ assign(local, local, envir = bigMap.Env)
 # exbdm <- paste(system.file('extdata', package = 'bigMap'), '/', sep = '')
 
 
-#' Set/get default path for \var{mybdm}
-#'
-#' @param path Path to \var{mybdm}.
-#'
-#' @return The current path value to \var{mybdm}
-#'
-#' @examples
-#'
-#' # --- set default path for \var{mybdm}
-#' bdm.mybdm('~/mybdm')
+# Set/get default path for \var{mybdm}
+#
+# @param path Path to \var{mybdm}.
+#
+# @return The current path value to \var{mybdm}
+#
+# @examples
+#
+# # --- set default path for \var{mybdm}
+# bdm.mybdm('~/mybdm')
 
-bdm.mybdm <- function(path = NULL)
+bdm_.mybdm <- function(path = NULL)
 {
 	if (!is.null(path)){
 		if (Sys.info()['sysname'] != 'Windows') {
@@ -51,19 +51,19 @@ bdm.mybdm <- function(path = NULL)
 }
 
 
-#' Set/get default local machine name or IP address
-#'
-#' @param dest Name or IP address of the local machine.
-#'
-#' @return The current value of \var{local}
-#'
-#' @examples
-#'
-#' # --- set default value of \var{local}
-#' bdm.local('xxx.255.0.0')
-#' bdm.local('mymachine.mydomain.cat')
+# Set/get default local machine name or IP address
+#
+# @param dest Name or IP address of the local machine.
+#
+# @return The current value of \var{local}
+#
+# @examples
+#
+# # --- set default value of \var{local}
+# bdm.local('xxx.255.0.0')
+# bdm.local('mymachine.mydomain.cat')
 
-bdm.local <- function(dest = NULL)
+bdm_.local <- function(dest = NULL)
 {
 	if (!is.null(dest)){
 		assign(local, dest, envir = bigMap.Env)

@@ -38,5 +38,5 @@ Plot WTT (clustering)
 \examples{
 
 bdm.example()
-exMap <- bdm.wtt.plot(exMap)
+bdm.wtt.plot(ex$map)
 }

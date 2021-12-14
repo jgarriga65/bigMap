@@ -24,5 +24,5 @@ Plot paKDE (density landscape)
 \examples{
 
 bdm.example()
-exMap <- bdm.pakde.plot(exMap)
+bdm.pakde.plot(ex$map)
 }

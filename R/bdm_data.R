@@ -19,7 +19,7 @@
 #     1M * 2147
 #    10M * 214
 
-bdm.data <- function(raw.data, whiten = 4, input.dim = NULL, is.distance = F, is.sparse = F, quiet = TRUE)
+bdm_.data <- function(raw.data, whiten = 4, input.dim = NULL, is.distance = F, is.sparse = F, quiet = TRUE)
 {
 	if (!quiet) cat('+++ processing data \n')
 	if (is.null(input.dim)) {

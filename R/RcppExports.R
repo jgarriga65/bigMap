@@ -9,8 +9,8 @@ thread_repF <- function(z_ini, z_end, sexpY, theta, sexpR) {
     .Call(`_bigMap_thread_repF`, z_ini, z_end, sexpY, theta, sexpR)
 }
 
-thread_iter <- function(z_ini, z_end, sexpP, sexpW, sexpY, sumP, sumQ, sexpR, sexpU, sexpG, lRate, alpha) {
-    .Call(`_bigMap_thread_iter`, z_ini, z_end, sexpP, sexpW, sexpY, sumP, sumQ, sexpR, sexpU, sexpG, lRate, alpha)
+thread_mIter <- function(z_ini, z_end, sexpP, sexpW, sexpY, sumP, sumQ, sexpR, sexpU, sexpG, eta, alpha, gain) {
+    .Call(`_bigMap_thread_mIter`, z_ini, z_end, sexpP, sexpW, sexpY, sumP, sumQ, sexpR, sexpU, sexpG, eta, alpha, gain)
 }
 
 z_kNP <- function(thread_rank, threads, sexpX, sexpY, is_distance, is_sparse, K, sampling) {
@@ -61,20 +61,16 @@ wtt_cpp <- function(X, Y, Z) {
     .Call(`_bigMap_wtt_cpp`, X, Y, Z)
 }
 
-centerScale <- function(sexpX, is_distance, is_sparse) {
-    invisible(.Call(`_bigMap_centerScale`, sexpX, is_distance, is_sparse))
-}
-
 zBeta <- function(thread_rank, threads, sexpX, is_distance, is_sparse, ppx, xppx) {
     .Call(`_bigMap_zBeta`, thread_rank, threads, sexpX, is_distance, is_sparse, ppx, xppx)
 }
 
-zBeta_lambertWm1 <- function(thread_rank, threads, sexpX, is_distance, is_sparse, ppx, xppx) {
-    .Call(`_bigMap_zBeta_lambertWm1`, thread_rank, threads, sexpX, is_distance, is_sparse, ppx, xppx)
+centerScale <- function(sexpX, is_distance, is_sparse) {
+    invisible(.Call(`_bigMap_centerScale`, sexpX, is_distance, is_sparse))
 }
 
-sckt_zTSNE <- function(thread_rank, threads, layers, sexpX, sexpB, sexpY, sexpI, iters, nnSize, theta, lRate, alpha, isDistance, isSparse, exgg) {
-    .Call(`_bigMap_sckt_zTSNE`, thread_rank, threads, layers, sexpX, sexpB, sexpY, sexpI, iters, nnSize, theta, lRate, alpha, isDistance, isSparse, exgg)
+sckt_zTSNE <- function(thread_rank, threads, layers, sexpX, sexpB, sexpY, sexpI, iters, nnSize, theta, lRate, alpha, gain, isDistance, isSparse) {
+    .Call(`_bigMap_sckt_zTSNE`, thread_rank, threads, layers, sexpX, sexpB, sexpY, sexpI, iters, nnSize, theta, lRate, alpha, gain, isDistance, isSparse)
 }
 
 zChnks <- function(Z_list, Y, I, brks_list) {
@@ -85,8 +81,8 @@ updateY <- function(Y, I, zMap_list, brks_list) {
     invisible(.Call(`_bigMap_updateY`, Y, I, zMap_list, brks_list))
 }
 
-mpi_zTSNE <- function(sexpX, sexpB, Y, indexes, iters, nnSize, theta, lRate, alpha, isDistance, isSparse, exgg) {
-    .Call(`_bigMap_mpi_zTSNE`, sexpX, sexpB, Y, indexes, iters, nnSize, theta, lRate, alpha, isDistance, isSparse, exgg)
+mpi_zTSNE <- function(thread_rank, sexpX, sexpB, Y, indexes, iters, nnSize, theta, lRate, alpha, gain, isDistance, isSparse) {
+    .Call(`_bigMap_mpi_zTSNE`, thread_rank, sexpX, sexpB, Y, indexes, iters, nnSize, theta, lRate, alpha, gain, isDistance, isSparse)
 }
 
 nnSS_chk <- function(sexpX, sexpB, indexes, isDistance, isSparse, nnSize) {

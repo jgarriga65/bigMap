@@ -2,7 +2,7 @@
 % Please edit documentation in R/bdm_dMap.R
 \name{bdm.dMap.plot}
 \alias{bdm.dMap.plot}
-\title{Class density maps plot.}
+\title{Class density map plot.}
 \usage{
 bdm.dMap.plot(
   bdm,
@@ -32,17 +32,17 @@ bdm.dMap.plot(
 
 \item{wtt.lwd}{The width of the watertrack lines (as set in \code{par()}).}
 
-\item{plot.peaks}{Logical value (TRUE by default). If set to TRUE and the up-stream step \code{bdm$wtt()} is computed the peak of each cluster is depicted.}
+\item{plot.peaks}{Default value is \code{plot.peaks = TRUE}. If set to TRUE and the up-stream step \code{bdm$wtt()} is computed the density peak of each cluster is depicted.}
 
-\item{labels.cex}{If \var{plot.peaks} is TRUE, the size of the labels of the clusters (as set in \code{par()}). By default \code{labels.cex=0.0} and the labels of the clusters are not depicted.}
+\item{labels.cex}{If \code{plot.peaks = TRUE}, \code{labels.cex} is the size of the labels of the clusters (as set in \code{par()}). By default \code{labels.cex=0.0} and the labels of the clusters are not depicted.}
 
-\item{layer}{The number of the layer from which the class density maps are computed (1 by default).}
+\item{layer}{The number of the layer from which the class density maps are computed. Default value is \code{layer = 1}.}
 }
 \value{
 None.
 }
 \description{
-Class density maps plot.
+Class density map plot.
 }
 \details{
 \code{bdm.dMap.plot()} yields a multi-plot layout where the first plot shows the dominating value of the covariate (or dominating class) in each cell, and the rest of the plots show the density map of each covariate value (or class).
@@ -57,8 +57,5 @@ The multi-plot layout can be limited to a subset of the values of the covariate 
 
 # --- load example dataset
 bdm.example()
-\dontrun{
-exMap <- bdm.dMap(exMap, threads = 4)
-bdm.dMap.plot(exMap)
-}
+bdm.dMap.plot(ex$map)
 }

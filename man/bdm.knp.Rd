@@ -31,7 +31,7 @@ A measure of matching between HD and LD neighborhoods ('Multi-scale similarities
 # --- load example dataset
 \dontrun{
 bdm.example()
-m <- bdm.knp(exData[, 1:4], exMap, threads = 4)
+m <- bdm.knp(ex$data, ex$map, threads = 4)
 }
 
 }

@@ -27,13 +27,13 @@ using namespace std;
 
 // check neighbors' set size
 // [[Rcpp::export]]
-Rcpp::NumericVector nnSS_chk(SEXP sexpX, SEXP sexpB, arma::Col<int> indexes, bool isDistance, bool isSparse, unsigned int nnSize)
+Rcpp::List nnSS_chk(SEXP sexpX, SEXP sexpB, arma::Col<int> indexes, bool isDistance, bool isSparse, unsigned int nnSize)
 {
 	// indexes
 	int* zIdx = indexes.begin();
 	unsigned int thread_size = indexes.size();
 	//. thread affinity matrix
-	unsigned int aff_size = thread_size *(thread_size -1) /2;
+	unsigned int aff_size = thread_size *nnSize;
 	double* thread_P = (double*) calloc(aff_size, sizeof(double));
 	// . indexes of data-point pairs with significant atractive forces
 	unsigned int* thread_W = (unsigned int*) calloc(aff_size, sizeof(unsigned int));
@@ -48,11 +48,12 @@ Rcpp::NumericVector nnSS_chk(SEXP sexpX, SEXP sexpB, arma::Col<int> indexes, boo
 	// . neighbors' set size
 	Rcpp::NumericVector thread_nnSS(thread_size);
 	thread_nnSS.fill(0);
-	for (unsigned int i = 0, ij = 0; i < thread_size; i++) {
-		for (unsigned int j = i +1; j < thread_size; j++, ij++) {
-			if (thread_P[ij] > 0) {
-				thread_nnSS[i] ++;
-				thread_nnSS[j] ++;
+	double zP = .0;
+	for (unsigned int zi = 0, k = 0; zi < thread_size; zi++) {
+		for (unsigned int ni = 0; ni < nnSize; ni++, k++) {
+			if (thread_P[k] > 0) {
+				zP += thread_P[k];
+				thread_nnSS[zi] ++;
 			}
 		}
 	}
@@ -61,5 +62,5 @@ Rcpp::NumericVector nnSS_chk(SEXP sexpX, SEXP sexpB, arma::Col<int> indexes, boo
 	free(thread_W); thread_W = NULL;
 	free(thread_P); thread_P = NULL;
 	zIdx = NULL;
-	return thread_nnSS;
+	return Rcpp::List::create(Named("nnS") = thread_nnSS, Named("P") = zP);
 }

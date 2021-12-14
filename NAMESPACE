@@ -13,4 +13,4 @@ importFrom(RColorBrewer, brewer.pal)
 importFrom(colorspace, hex, polarLUV)
 
 #exportPattern("^[[:alpha:]]+")
-exportPattern("^bdm.")
+exportPattern("^bdm[.]")

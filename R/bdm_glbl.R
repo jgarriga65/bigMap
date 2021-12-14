@@ -10,7 +10,6 @@
 # You should have received a copy of the GNU General Public License along with this program. If not, see http://www.gnu.org/licenses.
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-
 # cluster configuration
 varNames <- c('threads', 'thread.rank', 'thread.hldr')
 
@@ -29,11 +28,17 @@ varNames <- c(varNames, 'Ibm')
 # computation of betas
 varNames <- c(varNames, 'itr', 'tol', 'ppx')
 
-# t-SNE parameters
-varNames <- c(varNames, 'layers', 'iters', 'alpha', 'is.distance', 'info')
+# thread affinities
+varNames <- c(varNames, 'z.ini', 'z.end')
 
-# t-SNE best solution control
-varNames <- c(varNames, 'e.best', 'mapp.list')
+# ptSNE parameters
+varNames <- c(varNames, 'layers', 'iters', 'theta', 'alpha', 'lRate', 'is.distance', 'is.sparse', 'info')
+
+# thread ptSNE variables
+varNames <- c(varNames, 'sumP', 'sumQ', 'epoch', 'zSize', 'nnSize')
+
+# mtSNE parameters
+varNames <- c(varNames, 'nX', 'mY', 'Pbm', 'Wbm', 'Rbm', 'Ubm', 'Gbm')
 
 # pakde function
 varNames <- c(varNames, 'thread.pakde', 'pakde.grid')
@@ -41,6 +46,17 @@ varNames <- c(varNames, 'thread.pakde', 'pakde.grid')
 # dMap function
 varNames <- c(varNames, 'pakde', 'Y', 'L')
 
+# kNP + hlCorr
+varNames <- c(varNames, 'k.max', 'sampling', 'zSampleSize') 
+
+# Main settings (do not change !!)
+
+xppx <- 3
+normalize <- T
+
+momentum <- 0.8
+gain <- 2.0
+qDecay <- T
 
 # Global variables declaration
 

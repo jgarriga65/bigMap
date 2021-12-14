@@ -32,7 +32,7 @@
 #' # --- load example dataset
 #' \dontrun{
 #' bdm.example()
-#' m <- bdm.hlCorr(exData[, 1:4], exMap, threads = 4)
+#' m <- bdm.hlCorr(ex$data, ex$map, threads = 4)
 #' }
 #'
 
