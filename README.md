@@ -15,6 +15,6 @@ or you can use package *remotes* as well,
 
 ##### 2. Download the package source tarball
 
-Select the bigMap_x.x.x.tar.gz file and clik the download button. Afterwards install from within R with,
+Click on the Code (green) button and download the .zip file. Uncompress and install from within R with,
 
-\> install.packages('path_to_downloaded_file/bigMap_x.x.x.tar.gz', type = 'source', repos = NULL)
+\> install.packages('path_to_uncompressed_folder/bigMap-main/.', type = 'source', repos = NULL)
