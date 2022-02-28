@@ -73,7 +73,7 @@ bdm.init <- function(data, is.distance = F, is.sparse = F, ppx = 100, mpi.cl = N
 	}
 	bdm$is.distance <- is.distance
 	bdm$is.sparse <- is.sparse
-	bdm$normalize <- normalize
+	bdm$normalize <- normalize # (see global settings in R/bdm_glbl.R)
 	# compute betas
 	if (threads > 0) {
 		# start cluster
