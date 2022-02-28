@@ -85,7 +85,12 @@ void affMtx::affinities(double* K, double* P, unsigned int* W)
 	for (unsigned int zi = 0; zi < z; zi++) {
 		for (unsigned int ni = 0, ij = zi *nnSize; ni < nnSize; ni++, ij++) {
 			unsigned int zj = W[ij];
-			P[ij] = joinNormalization *(K[zi *z +zj] /C[zi] + K[zj *z +zi] /C[zj]);
+			// this should be unnecessary because zj should never be equal or higher than z;
+			// some very special cases (e.g. Vicente data) yield an error here;
+			// so, there must be a bug in the affinity ranking;
+			if (zj < z) {
+				P[ij] = joinNormalization *(K[zi *z +zj] /C[zi] + K[zj *z +zi] /C[zj]);
+			}
 			zP += P[ij];
 		}
 	}
