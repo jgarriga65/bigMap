@@ -1,6 +1,12 @@
 # bigMap
 Big data mapping with paralellized t-SNE
 
+#### Dependencies
+
+For Ubuntu 22.04 install bigmemory with
+
+$ sudo apt-get install r-cran-bigmemory
+
 #### Installing options
 
 ##### 1. From within R (easiest)
