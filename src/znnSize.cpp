@@ -64,3 +64,55 @@ Rcpp::List nnSS_chk(SEXP sexpX, SEXP sexpB, arma::Col<int> indexes, bool isDista
 	zIdx = NULL;
 	return Rcpp::List::create(Named("nnS") = thread_nnSS, Named("P") = zP);
 }
+
+
+// check nearest neighbors' set
+// [[Rcpp::export]]
+Rcpp::List nnS_chk(SEXP sexpX, SEXP sexpB, arma::Col<int> indexes, bool isDistance, bool isSparse, unsigned int nnSize)
+{
+	// indexes
+	int* zIdx = indexes.begin();
+	unsigned int thread_size = indexes.size();
+	//. thread affinity matrix
+	unsigned int aff_size = thread_size *nnSize;
+	double* thread_P = (double*) calloc(aff_size, sizeof(double));
+	// . indexes of data-point pairs with significant atractive forces
+	unsigned int* thread_W = (unsigned int*) calloc(aff_size, sizeof(unsigned int));
+	// . affinity matrix
+	affMtx* affmtx = new affMtx(sexpX, sexpB, zIdx, thread_size, nnSize);
+	if (isDistance)
+		affmtx ->D2P(thread_P, thread_W);
+	else if (isSparse)
+		affmtx ->S2P(thread_P, thread_W);
+	else
+		affmtx ->X2P(thread_P, thread_W);
+	// . neighbors' set size
+	arma::Mat<double> thread_aff(thread_size, nnSize);
+	arma::Mat<int> thread_nnS(thread_size, nnSize);
+	for (unsigned int zi = 0, k = 0; zi < thread_size; zi++) {
+		for (unsigned int ni = 0; ni < nnSize; ni++, k++) {
+			thread_aff(zi, ni) = thread_P[k];
+			if (thread_P[k] > 0) thread_nnS(zi, ni) = zIdx[thread_W[k]];
+			else thread_nnS(zi, ni) = -1;
+		}
+	}
+	// free memory
+	delete affmtx;
+	free(thread_W); thread_W = NULL;
+	free(thread_P); thread_P = NULL;
+	zIdx = NULL;
+	return Rcpp::List::create(Named("P") = thread_aff, Named("W") = thread_nnS);
+}
+
+/***R
+
+check1 <- function(X, B, z, nnSize, is.distance = F, is.sparse = F)
+{
+	Xbm <- bigmemory::as.big.matrix(t(X), type = 'double')
+	Bbm <- bigmemory::as.big.matrix(t(B), type = 'double')
+	idx <- sample(1:nrow(X))[1:z] -1
+	idx <- 1:z -1
+	nnS <- nnS_chk(Xbm@address, Bbm@address, idx, is.distance, is.sparse, nnSize)
+	return(list(I = idx +2, P = nnS$P, W = nnS$W +2)) // Add 2: 1 to convert c++ to R, and 1 to convert rows to digits
+}
+*/

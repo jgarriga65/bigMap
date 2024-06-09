@@ -5,7 +5,7 @@
 \title{Multi-core t-SNE (mtSNE)}
 \usage{
 bdm.mtsne(
-  dSet.data,
+  data,
   is.distance = F,
   is.sparse = F,
   ppx = 100,
@@ -17,7 +17,7 @@ bdm.mtsne(
 )
 }
 \arguments{
-\item{dSet.data}{A \var{data.frame} or \var{matrix} with raw input-data. The dataset must not have duplicated rows.}
+\item{data}{A \var{data.frame} or \var{matrix} with raw input-data. The dataset must not have duplicated rows.}
 
 \item{is.distance}{Default value is \var{is.distance = FALSE}. TRUE indicates that raw data is a distance matrix.}
 

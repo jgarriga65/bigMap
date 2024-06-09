@@ -28,6 +28,8 @@ public:
 	double* X;
 	double* B;
 	double zP;
+	// debug index
+	int debugRow;
 
 	// constructor
 	affMtx(SEXP sexpX, SEXP sexpB, int* zIdx, unsigned int z, unsigned int nnSize);
@@ -47,9 +49,9 @@ public:
 	// affinities
 	void affinities(double* K, double* P, unsigned int* W);
 	// versions for BHt-SNE
-	void mt_X2P(unsigned int z_ini, unsigned int z_end, double* P, unsigned int* W);
-	void mt_D2P(unsigned int z_ini, unsigned int z_end, double* P, unsigned int* W);
-	void mt_S2P(unsigned int z_ini, unsigned int z_end, double* P, unsigned int* W);
+	void bh_X2P(unsigned int z_ini, unsigned int z_end, double* P, unsigned int* W);
+	void bh_D2P(unsigned int z_ini, unsigned int z_end, double* P, unsigned int* W);
+	void bh_S2P(unsigned int z_ini, unsigned int z_end, double* P, unsigned int* W);
 
 };
 

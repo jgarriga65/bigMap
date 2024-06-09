@@ -2,7 +2,7 @@
 % Please edit documentation in R/bdm_clst.R
 \name{bdm.mpi.start}
 \alias{bdm.mpi.start}
-\title{Initialize MPI parallel computing environment.}
+\title{Initialize parallel computing environment.}
 \usage{
 bdm.mpi.start(threads)
 }
@@ -13,5 +13,5 @@ bdm.mpi.start(threads)
 cl A cluster instance (as created by the snow::makeCluster() function).
 }
 \description{
-Initialize MPI parallel computing environment.
+Initialize parallel computing environment.
 }

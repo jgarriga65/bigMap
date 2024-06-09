@@ -10,6 +10,8 @@
 # You should have received a copy of the GNU General Public License along with this program. If not, see http://www.gnu.org/licenses.
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
+# !!! DEPRECATED (all)
+
 # Define package environment
 bigMap.Env <- new.env()
 
@@ -35,9 +37,9 @@ assign(local, local, envir = bigMap.Env)
 # @examples
 #
 # # --- set default path for \var{mybdm}
-# bdm.mybdm('~/mybdm')
+# bd_.mybdm('~/mybdm')
 
-bdm_.mybdm <- function(path = NULL)
+bd_.mybdm <- function(path = NULL)
 {
 	if (!is.null(path)){
 		if (Sys.info()['sysname'] != 'Windows') {
@@ -60,10 +62,10 @@ bdm_.mybdm <- function(path = NULL)
 # @examples
 #
 # # --- set default value of \var{local}
-# bdm.local('xxx.255.0.0')
-# bdm.local('mymachine.mydomain.cat')
+# bd_.local('xxx.255.0.0')
+# bd_.local('mymachine.mydomain.cat')
 
-bdm_.local <- function(dest = NULL)
+bd_.local <- function(dest = NULL)
 {
 	if (!is.null(dest)){
 		assign(local, dest, envir = bigMap.Env)

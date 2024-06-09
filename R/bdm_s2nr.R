@@ -78,7 +78,7 @@ s2nr.merge <- function(X, bdm, k = 10, verbose = T, layer = 1)
 
 s2nr.kList <- function(C, L, X, Z, G, P)
 {
-	max.Var <- apply(X[ , ], 2, var)
+	#max.Var <- apply(X[ , ], 2, var)
 	K <- lapply(unique(C), function(k)
 	{
 		k.data <- which(L == k)
@@ -140,16 +140,24 @@ s2nr.kfthr <- function(C, Z, G, P, k.merged)
 s2nr.update <- function(kj, ki)
 {
 	N <- (kj$N + ki$N)
-	M <- (kj$M *kj$N + ki$M *ki$N) /N
-	# V <- ((kj$N *(kj$V +(kj$M -M)**2)) +(ki$N *(ki$V +(ki$M -M)**2))) /N
-	V <- (kj$N *(kj$V +M**2 -kj$M**2) +ki$N *(ki$V +M**2 -ki$M**2)) /N
+	if (N > 0){
+		M <- (kj$M *kj$N + ki$M *ki$N) /N
+		# V <- ((kj$N *(kj$V +(kj$M -M)**2)) +(ki$N *(ki$V +(ki$M -M)**2))) /N
+		V <- (kj$N *(kj$V +M**2 -kj$M**2) +ki$N *(ki$V +M**2 -ki$M**2)) /N
+	}
+	else {
+		# preserve M and V dimension !!!
+		M <- (kj$M + ki$M)
+		V <- (kj$V + ki$V)
+	}
 	return(list(k = kj$k, fthr = kj$fthr, N = N, M = M, V = V))
 }
 
 # !!! Remember: \sum_{ij}((x_i-x_j)^2) = 2n \sum_i((x_i-\hat{x})^2)
 # i.e. ... the variance is equivalent to the sum of pairwise distances among datapoints
 # i.e. ... the sum of squared-distances between cluster centroids and global mean is equivalent to the sum of pairwise distances among cluster centroids.
-s2nr.value <- function(K)
+# THOUGH ... I'm not using it here, indeed !!!!
+s2nr.value__ <- function(K)
 {
 	k.N <- sapply(K, function(k) k$N)
 	k.valid <- which(k.N > 0)
@@ -159,6 +167,35 @@ s2nr.value <- function(K)
 	# noise: intra-cluster (unexplained) variance
 	unx.var <- t(sapply(K, function(k) k$V))[k.valid, ]
 	return(sum(exp.var) /sum(unx.var) /sum(k.N))
+}
+
+s2nr.value <- function(K)
+{
+	# data length
+	N <- sum(sapply(K, function(k) k$N))
+	# current number of clusters
+	n.clusters <- sum(sapply(K, function(k) (k$N > 0)))
+
+	# +++ signal: inter-cluster (explained) variance
+	# compute the global mean as a weighted average of the cluster means
+	d.mean <- t(sapply(K, function(k) k$M *k$N))
+	# average across all clusters
+	d.mean <- apply(d.mean, 2, sum) /N
+	# compute cluster-mean to global-mean squared distances
+	exp.var <- t(sapply(K, function(k) sum((k$M -d.mean)**2)))
+	# sum across all clusters and average
+	exp.var <- sum(exp.var) /(n.clusters -1)
+
+	# +++ noise: intra-cluster (unexplained) variance
+	# I'm using the precomputed variances to compute the sum of intra-cluster squared distances
+	# \sum_{i\in k} (x_i -\bar(x)_k)^2 = var(k) *n_k (considering sample variance)
+	k.sqdist <- t(sapply(K, function(k) k$V *k$N))
+	# sum across all clusters
+	unx.var <- apply(k.sqdist, 2, sum)
+	# sum through all dimensions and get average distance
+	unx.var <- sum(unx.var) /(N -n.clusters)
+
+	return(exp.var /unx.var)
 }
 
 # compute S2NR for all possible merges at current step

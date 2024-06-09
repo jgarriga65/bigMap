@@ -2,7 +2,7 @@
 % Please edit documentation in R/bdm_main.R
 \name{bdm.init}
 \alias{bdm.init}
-\title{Initialization of a \var{bdm} data mapping instance.}
+\title{Embedding initialization.}
 \usage{
 bdm.init(
   data,
@@ -11,7 +11,7 @@ bdm.init(
   ppx = 100,
   mpi.cl = NULL,
   threads = 4,
-  dSet.labels = NULL
+  labels = NULL
 )
 }
 \arguments{
@@ -27,10 +27,10 @@ bdm.init(
 
 \item{threads}{Number of parallel threads (according to data size and hardware resources, \var{i.e.} number of cores and available memory. Default value is \var{threads = 4}).}
 
-\item{dSet.labels}{If available, labels can be included as a separate vector of length equal to \var{nrow(data)}. Label values are factorized as \var{as.numeric(as.factor(labels))}.}
+\item{labels}{If available, a length \var{nrow(data)} vector of class labels. Label values are factorized as \var{as.numeric(as.factor(labels))}.}
 }
 \value{
-A \var{bdm} data mapping instance. A \var{bdm} instance is the starting object of the mapping protocol, a list to which new elements are added at each step of the mapping protocol.
+A \var{bdm} data mapping instance. This \var{bdm} instance is the starting object of the mapping protocol: a list to which new elements are added at each step of the mapping protocol.
 }
 \description{
 Computes the precision parameters for the given perplexity (i.e. the local bandwidths for the input affinity kernels) and returns them as a \var{bdm} data mapping instance. A \var{bdm} data mapping instance is the starting object of the mapping protocol, a list to which new elements are added at each step of the mapping protocol.

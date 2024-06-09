@@ -29,13 +29,13 @@ public:
 	TSNE(unsigned int z, unsigned int nnSize, unsigned int mY, int max_iter, double theta, double lRate, double alpha, double gain, double zP);
 
 	// run
-	void run2D(double* P, unsigned int* W, double* Y);
+	void run2D(double* P, unsigned int* W, double* Y, int debug, unsigned int thread_rank, unsigned int epoch);
 	// compute Cost
 	double Cost(double* P, unsigned int* W, double* Y);
 
 private:
 	// compute gradient forces
-	void Gradient(double* P, unsigned int* W, double* Y, double* atrF, double* repF, double& zQ);
+	void getForces(double* P, unsigned int* W, double* Y, double* atrF, double* repF, double& zQ);
 };
 
 #endif

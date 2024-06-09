@@ -1,24 +1,24 @@
 Package: bigMap
 Type: Package
 Title: Big Data Mapping
-Version: 4.6.0
-Date: 2021-12-01
+Version: 4.6.2
+Date: 2024-06-01
 Authors@R: c(
  person(given="Joan", family="Garriga", email="jgarriga@ceab.csic.es", role=c("aut", "cre")),
  person(given="Frederic", family="Bartumeus", email="fbartu@ceab.csic.es", role=c("aut"))
  )
 Description: Unsupervised clustering protocol for large scale structured data, based on a low dimensional representation of the data. Dimensionality reduction is performed using a parallelized implementation of the t-Stochastic Neighboring Embedding algorithm (Garriga J. and Bartumeus F. (2018), <arXiv:1812.09869>).
-License: GPL-3 + file LICENSE
+License: GPL-3 | file LICENSE
 Depends: R (>= 3.5.0)
-Imports: Rcpp (>= 0.12.0), bigmemory (>= 4.5.0), parallel (>= 3.5.0), RColorBrewer, colorspace
+Imports: Rcpp (>= 0.12.0), bigmemory (>= 4.5.0), parallel (>= 3.5.0), RColorBrewer, colorspace,
 Suggests: snow (>= 0.4-2), knitr, rmarkdown
 LinkingTo: Rcpp, RcppArmadillo, BH, bigmemory
 LazyData: FALSE
 VignetteBuilder: knitr
-RoxygenNote: 7.1.1
+RoxygenNote: 7.3.1
 SystemRequirements: GNU make
 NeedsCompilation: yes
-Packaged: 2021-12-01 15:22:00 UTC; jgarriga
+Packaged: 2019-10-04 14:44:06 UTC; jgarriga
 Author: Joan Garriga [aut, cre],
   Frederic Bartumeus [aut]
 Maintainer: Joan Garriga <jgarriga@ceab.csic.es>

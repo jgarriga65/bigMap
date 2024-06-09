@@ -19,7 +19,10 @@
 #     1M * 2147
 #    10M * 214
 
-bdm_.data <- function(raw.data, whiten = 4, input.dim = NULL, is.distance = F, is.sparse = F, quiet = TRUE)
+# DEPRECATED!!!
+# Any data pre-processing is left to the user
+
+bd_.data <- function(raw.data, whiten = 4, input.dim = NULL, is.distance = F, is.sparse = F, quiet = TRUE)
 {
 	if (!quiet) cat('+++ processing data \n')
 	if (is.null(input.dim)) {
@@ -29,15 +32,15 @@ bdm_.data <- function(raw.data, whiten = 4, input.dim = NULL, is.distance = F, i
 			input.dim <- ncol(raw.data)
 		}
 	}
-	if (class(raw.data) == 'character') {
+	if ('character' %in% class(raw.data)) {
 		return(list(inp.data = raw.data, whiten = 0, input.dim = input.dim))
 	}
 	else {
 		if (whiten == 0){
-			if (class(raw.data) != 'big.matrix') {
-				return(list(inp.data = as.big.matrix(raw.data[, 1:input.dim], type = 'double'), whiten = 0, input.dim = input.dim))
-			} else {
+			if ('big.matrix' %in% class(raw.data)) {
 				return(list(inp.data = raw.data, whiten = 0, input.dim = input.dim))
+			} else {
+				return(list(inp.data = as.big.matrix(raw.data[, 1:input.dim], type = 'double'), whiten = 0, input.dim = input.dim))
 			}
 		}
 		else {

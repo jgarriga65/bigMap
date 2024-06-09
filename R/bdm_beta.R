@@ -13,7 +13,10 @@
 # +++ Parallelized computation of perplexity-based local betas (by chunks)
 # -----------------------------------------------------------------------------
 
-# Compute perplexity-based local betas. This function assumes that \var{Xbm} (input-data big.matrix) is attached to the workers of \var{cl}. Also \var{is.distance} must have been exported to the workers. The up-stream step \code{bdm.data()} works out both conditions.
+# Compute perplexity-based local betas.
+# This function assumes that \var{Xbm} (input-data big.matrix) is attached to the workers of \var{cl}.
+# Also \var{is.distance} must have been exported to the workers.
+# The up-stream step \code{bdm.data()} works out both conditions.
 
 # Att!!
 # beta_i = 1/(2 *sigma**2) and sigma_i = 1/sqrt(2 *beta_i)

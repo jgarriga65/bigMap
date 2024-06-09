@@ -4,12 +4,12 @@
 \alias{bdm.labels}
 \title{Get data-point clustering labels.}
 \usage{
-bdm.labels(bdm, merged = T, layer = 1)
+bdm.labels(bdm, merged = F, layer = 1)
 }
 \arguments{
 \item{bdm}{A \var{bdm} data mapping instance.}
 
-\item{merged}{Default value is \var{merged = TRUE}. If \var{merged = TRUE} and the clustering has been merged, the labels are the ids of the clusters after merging. If \var{merged = FALSE} or the clustering has not been merged, the labels indicate the ids of to the top-level clustering.}
+\item{merged}{Default value is \var{merged = FALSE}. If \var{merged = TRUE} and the clustering has been merged, the labels are the ids of the clusters after merging. If \var{merged = FALSE} or the clustering has not been merged, the labels indicate the ids of to the top-level clustering.}
 
 \item{layer}{The ptSNE output layer. Default value is \var{layer = 1}.}
 }

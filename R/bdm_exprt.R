@@ -27,12 +27,12 @@ Xdata.exp <- function(cl, inp.data, is.distance, is.sparse, normalize)
 	clusterExport(cl, c('is.distance', 'is.sparse', 'normalize'), envir = environment())
 	if (attr(cl[[1]], 'class') == 'SOCKnode')
 	{
-		if (class(inp.data) == 'character') {
+		if ('character' %in% class(inp.data)) {
 			cat('+++ loading ', inp.data, ' \n', sep = '')
 			dataFile <- inp.data
 			inp.data <- as.matrix(read.csv(dataFile))
 		}
-		else if (class(inp.data) == 'big.matrix') {
+		else if ('big.matrix' %in% class(inp.data)) {
 			inp.data <- inp.data[, ]
 		}
 		Xbm <- as.big.matrix(t(inp.data), type = 'double')
@@ -44,7 +44,7 @@ Xdata.exp <- function(cl, inp.data, is.distance, is.sparse, normalize)
 		# attach big matrix to workers
 		clusterEvalQ(cl, Xbm <- attach.big.matrix(Xbm.dsc))
 	}
-	else if (class(inp.data) == 'character')
+	else if ('character' %in% class(inp.data))
 	{
 		# attach big.matrix data to holders
 		cat('+++ loading ', inp.data, ' \n', sep = '')
@@ -69,7 +69,7 @@ Xdata.exp <- function(cl, inp.data, is.distance, is.sparse, normalize)
 	}
 	else
 	{
-		if (class(inp.data) == 'big.matrix') inp.data <- inp.data[, ]
+		if ('big.matrix' %in% class(inp.data)) inp.data <- inp.data[, ]
 		f <- tName.get('X')
 		Xbf <- as.big.matrix(inp.data, type='double', backingpath = f$path, backingfile = f$bin, descriptorfile = f$desc)
 		Xbf.dsc <- describe(Xbf)

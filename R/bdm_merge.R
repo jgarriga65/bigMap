@@ -17,49 +17,53 @@
 #'
 #' @param data Input data (a matrix, a big.matrix or a .csv file name).
 #'
-#' @param bdm A \var{bdm} data mapping instance.
+#' @param bdm A clustered \var{bdm} instance (\var{i.e.} all up-stream steps performed: \code{bdm.ptse(), bdm.pakde() and bdm.wtt()}.
 #'
-#' @param plot.optk Default value is \var{plot.optk = TRUE}, i.e. the function plots the S2NR measure versus the number of clusters.
+#' @param plot.optk Logical value. If TRUE, this function plots the heuristic measure versus the number of clusters (default value is \code{plot.optk = TRUE})
 #'
-#' @param ret.optk Default value is \var{ret.optk = FALSE}. For large datasets this computation can take a while, so it can be saved. If TRUE, the S2NR computation is saved and returned along with a \var{bdm} data mapping instance.
+#' @param ret.optk Logical value. For large datasets this computation can take a while and it might be interesting to save it. If TRUE, the function returns a copy of the \var{bdm} instance with the values of S2NR attached as \var{bdm$optk} (default value is \code{ret.optk = FALSE}).
 #'
-#' @param info Default value is \var{info = TRUE}. If TRUE, all merging steps are shown.
+#' @param info Logical value. If TRUE, all merging steps are shown (default value is \code{info = FALSE}).
 #'
-#' @param layer The ptSNE output layer. Default value is \var{layer = 1}.
+#' @param layer The \var{bdm$ptsne} layer to be used (default value is \code{layer = 1}).
 #'
-#' @return None if \var{ret.optk = FALSE}, else, a \var{bdm} data mapping instance.
+#' @return None if \code{ret.optk = FALSE}. Else, a copy of the input \var{bdm} instance with new element \var{bdm$optk} (a matrix).
 #'
-#' @details The underlying heuristic is that neigbouring clusters in the embedding correspond to close clusters in the high dimensional space, \var{i.e.} this merging heuristic is based on the spatial distribution of clusters. For each cluster (child cluster) we choose the neighboring cluster with steepest gradient along their common border (father cluster). Thus, we get a set of pairs of clusters (child/father) to be potentially merged. Given this set of candidates, the merging is performed recursively choosing, at each step, the pair of child/father clusters that results in a minimum loss of S2NR.
+#' @details The underlying idea is that neigbouring clusters in the embedding correspond to close clusters in the high dimensional space, \var{i.e.} this merging heuristic is based on the spatial distribution of clusters. For each cluster (child cluster) we choose the neighboring cluster with steepest gradient along their common border (father cluster). Thus, we get a set of pairs of clusters (child/father) to be potentially merged. Given this set of candidates, the merging is performed recursively choosing, at each step, the pair of child/father clusters that results in a minimum loss of S2NR.
 #' Typically some clusters dominate over all of their neighboring clusters. These clusters have no \var{father}. Thus, once all posible mergings have been performed we reach a \var{blocked} state where only the dominant clusters remain. This situation identifies a hierarchy level in the clustering. When this situation is reached, the algorithm starts a new merging round, identifying the child/father relations at that level of the hierarchy. The process stops when only two clusters remain.
-#' Usually, the clustering hierarchy is clearly depicted by singular points in the S2NR function. This is a hint that the low dimensional clustering configuration is an image of a hierarchycal configuration in the high dimensional space. See \var{bdm.optk.plot()}.
+#' Usually, the clustering hierarchy is clearly depicted by singular points in the S2NR function. This is a hint that the low dimensional clustering configuration is an image of a hierarchycal configuration in the high dimensional space. See \code{bdm.optk.plot()}.
 #'
 #' @examples
 #'
 #' # --- load mapped dataset
 #' bdm.example()
-#' # --- compute the optimal number of clusters and plot the S2NR
-#' bdm.optk.s2nr(ex$data, ex$map, plot.optk = TRUE, ret.optk = FALSE)
+#' # --- compute optimal number of clusters and attach the computation
+#' bdm.optk.s2nr(ex$map, data = ex$data, plot.optk = TRUE, ret.optk = FALSE)
 
 bdm.optk.s2nr <- function(data, bdm, info = T, plot.optk = T, ret.optk = F, layer = 1)
 {
 	if (is.null(data))
-		return(message('+++ Error: must define raw data !'))
+	{
+		message('+++ Error: must define raw data !')
+		if (ret.optk) return(bdm) else return()
+	}
+
 	if (is.null(bdm$wtt[[layer]]$C)) {
-		return(message('+++ Error: up-stream step bdm.wtt(layer = ', layer, ') not found !', sep = ''))
+		message('+++ Error: up-stream step bdm.wtt(layer = ', layer, ') not found !', sep = '')
+		if (ret.optk) return(bdm) else return()
 	}
-	else {
-		bdm$optk <- s2nr.optk(data, bdm, verbose = info, layer = layer)
-		if (plot.optk) bdm.optk.plot(bdm)
-		if (ret.optk) return(bdm)
-	}
+
+	bdm$optk <- s2nr.optk(data, bdm, verbose = info, layer = layer)
+	if (plot.optk) bdm.optk.plot(bdm)
+	if (ret.optk) return(bdm)
 }
 
 
 #' Plots the signal-to-noise-ratio as a function of the number of clusters.
 #'
-#' The function \var{bdm.optk.sn2r()} computes the S2NR that results from recursively merging clusters and, by deafult, makes a plot of these values. For large datasets this computation can take a while, so we can save this result by setting \var{optk.ret = TRUE}. If this result is saved, we can plot it again at any time using this funcion.
+#' The function \code{bdm.optk.sn2r()} computes the S2NR that results from recursively merging clusters and, by deafult, makes a plot of these values. For large datasets this computation can take a while, so we can save this result by setting \code{optk.ret = TRUE}. If this result is saved, we can plot it again at any time using this funcion.
 #'
-#' @param bdm A \var{bdm} data mapping instance.
+#' @param bdm A \var{bdm} instance as generated by \code{bdm.init()}.
 #'
 #' @return None.
 #'
@@ -72,7 +76,9 @@ bdm.optk.s2nr <- function(data, bdm, info = T, plot.optk = T, ret.optk = F, laye
 bdm.optk.plot <- function(bdm)
 {
 	if (is.null(bdm$optk))
+	{
 		return(message('+++ Error: up-stream step bdm.optk() is not computed ! \n'))
+	}
 
 	optk <- bdm$optk
 	s <- length(optk$H) +1
@@ -117,7 +123,7 @@ bdm.optk.plot <- function(bdm)
 	abline(v = L, lwd=2.0, col="#BBBBBB")
 	if (length(optk$loss) < 4) {
 		axis(3, at = L, labels = optk$loss, cex.axis = 0.6, tick = FALSE)
-	} else{
+	} else {
 		sel <- seq(1, length(optk$loss), by = 2)
 		axis(3, at=L[sel], labels = optk$loss[sel], cex.axis = 0.6, tick = FALSE)
 		sel <- seq(2, length(optk$loss), by = 2)
@@ -133,48 +139,47 @@ bdm.optk.plot <- function(bdm)
 #'
 #' @param data Input data (a matrix, a big.matrix or a .csv file name).
 #'
-#' @param bdm A \var{bdm} data mapping instance.
+#' @param bdm A \var{bdm} instance as generated by \code{bdm.init()}.
 #'
-#' @param k The number of desired clusters. The clustering will be recursively merged until reaching this number of clusters. Default value is \var{k = 10}. By setting \var{k < 0} we specify the number of clusters we want to merge (as opposed to the number of final clusters).
+#' @param k The number of desired clusters. The clustering will be recursively merged until reaching this number of clusters (default value is \code{k = 10}). By setting \code{k < 0} we can specify the number of clusters that we are willing to merge.
 #'
-#' @param plot.merge Default value is \var{plot.merge = TRUE}, i.e. the merged clustering is plotted.
+#' @param plot.merge Logical value. If TRUE, the merged clustering is plotted (default value is \code{plot.merge = TRUE})
 #'
-#' @param ret.merge Default value is \var{ret.merge = FALSE}. If \var{ret.merge = TRUE}, the function returns a \var{bdm} data mapping instance with the merged clustering.
+#' @param ret.merge Logical value. If TRUE, the function returns a copy of the input \var{bdm} instance with the merged clustering attached as \var{bdm$merge} (default value is \code{ret.merge = FALSE})
 #'
-#' @param info Default value is \var{info = FALSE}. If TRUE, all merging steps are shown.
+#' @param info Logical value. If TRUE, all merging steps are shown (default value is \code{info = FALSE}).
 #'
-#' @param layer The ptSNE output layer. Default value is \var{layer = 1}.
+#' @param layer The \var{bdm$ptsne} layer to be used (default value is \code{layer = 1}).
 #'
-#' @param ... If \var{plot.merge} is TRUE, you can pass plotting parameters to \var{bdm.wtt.plot()}.
+#' @param ... If \var{plot.merge} is TRUE, you can set the \code{bdm.wtt.plot()} parameters to control the plot.
 #'
-#' @return None if \var{ret.merge = FALSE}, else, a \var{bdm} data mapping instance.
+#' @return None if \code{ret.merge = FALSE}. Else, a copy of the input \var{bdm} instance with new element \var{bdm$merge}.
 #'
-#' @details See details in \var{bdm.optk.s2nr()}.
+#' @details See details in \code{bdm.optk.s2nr()}.
 #'
 #' @examples
 #'
-#' # --- load mapped dataset
 #' bdm.example()
-#' \dontrun{
-#' # --- merge and plot (no save)
-#' bdm.merge.s2nr(ex$data, ex$map, k = 12)
-#' # --- merge and return merging (do no plot)
-#' m <- bdm.merge.s2nr(ex$data, ex$map, k = 12, ret.merge = T, plot.merge = F)
-#' # --- plot merging afterwards (use bdm.wtt.plot() function)
-#' bdm.wtt.plot(m)
-#' }
+#' m.labels <- bdm.labels(ex$map)
 
 bdm.merge.s2nr <- function(data, bdm, k = 10, plot.merge = T, ret.merge = F, info = T, layer = 1, ...){
 
 	if (is.null(data))
-		return(message('+++ Error: must define raw data !'))
-	if (k >= bdm$wtt[[layer]]$s)
-		return(message('+++ Error: k must be lower than the current number of clusters !'))
+	{
+		message('+++ Error: must define raw data !')
+		if (ret.merge) return(bdm) else return()
+	}
+
 	bdm$merge <- s2nr.merge(data, bdm, k = k, verbose = info, layer = layer)
 	if (length(bdm$merge$steps) == 0)
-		return(message('+++ Merging error !!'))
+	{
+		message('+++ Merging error !!')
+		if (ret.merge) return(bdm) else return()
+	}
+
 	# show clustering after merge
 	if (plot.merge) bdm.wtt.plot(bdm, layer = layer, ...)
+
 	# return new hdd
 	if (ret.merge) return(bdm)
 }

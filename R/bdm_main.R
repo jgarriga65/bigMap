@@ -32,7 +32,8 @@ bdm.example <- function()
 }
 
 
-#' Initialization of a \var{bdm} data mapping instance.
+
+#' Embedding initialization.
 #'
 #' Computes the precision parameters for the given perplexity (i.e. the local bandwidths for the input affinity kernels) and returns them as a \var{bdm} data mapping instance. A \var{bdm} data mapping instance is the starting object of the mapping protocol, a list to which new elements are added at each step of the mapping protocol.
 #'
@@ -48,9 +49,9 @@ bdm.example <- function()
 #'
 #' @param threads Number of parallel threads (according to data size and hardware resources, \var{i.e.} number of cores and available memory. Default value is \var{threads = 4}).
 #'
-#' @param dSet.labels If available, labels can be included as a separate vector of length equal to \var{nrow(data)}. Label values are factorized as \var{as.numeric(as.factor(labels))}.
+#' @param labels If available, a length \var{nrow(data)} vector of class labels. Label values are factorized as \var{as.numeric(as.factor(labels))}.
 #'
-#' @return A \var{bdm} data mapping instance. A \var{bdm} instance is the starting object of the mapping protocol, a list to which new elements are added at each step of the mapping protocol.
+#' @return A \var{bdm} data mapping instance. This \var{bdm} instance is the starting object of the mapping protocol: a list to which new elements are added at each step of the mapping protocol.
 #'
 #' @examples
 #'
@@ -60,11 +61,12 @@ bdm.example <- function()
 #' m <- bdm.init(ex$data, ppx = 250, labels = ex$labels)
 #' }
 
-bdm.init <- function(data, is.distance = F, is.sparse = F, ppx = 100, mpi.cl = NULL, threads = 4, dSet.labels = NULL)
+bdm.init <- function(data, is.distance = F, is.sparse = F, ppx = 100, mpi.cl = NULL, threads = 4, labels = NULL)
 {
+	# ++++++++++++ !!! see settings in R/bdm_glbl.R for: normalize, xppx ++++++++++++++++++++
 	bdm <- list()
 	# check data is given as fileName.csv
-	if (class(data) == 'character') {
+	if ('character' %in% class(data)) {
 	 	if (!file.exists(data)) {
 			message('+++ Data file not found !! \n')
 			return(FALSE)
@@ -73,7 +75,7 @@ bdm.init <- function(data, is.distance = F, is.sparse = F, ppx = 100, mpi.cl = N
 	}
 	bdm$is.distance <- is.distance
 	bdm$is.sparse <- is.sparse
-	bdm$normalize <- normalize # (see global settings in R/bdm_glbl.R)
+	bdm$normalize <- normalize
 	# compute betas
 	if (threads > 0) {
 		# start cluster
@@ -97,9 +99,10 @@ bdm.init <- function(data, is.distance = F, is.sparse = F, ppx = 100, mpi.cl = N
 		if (is.null(mpi.cl)) cluster.stop(cl)
 	}
 	# attach labels
-	if (!is.null(dSet.labels)) bdm$lbls <- as.numeric(as.factor(dSet.labels))
+	if (!is.null(labels)) bdm$lbls <- as.numeric(as.factor(labels))
 	return(bdm)
 }
+
 
 #' Parallelized t-SNE (ptSNE)
 #'
@@ -139,7 +142,8 @@ bdm.init <- function(data, is.distance = F, is.sparse = F, ppx = 100, mpi.cl = N
 
 bdm.ptsne <- function(data, bdm, theta = 0.5, Y.init = NULL, mpi.cl = NULL, threads = 4, layers = 2, info = 0)
 {
-	# +++ sanity check
+	# ++++++++++++ !!! see settings in R/bdm_glbl.R for: gain, momentum, qDecay ++++++++++++++++++++
+	# sanity checks
 	if (!is.null(Y.init) && (ncol(Y.init) != 2 *layers)) {
 		return(message('+++ ncol(Y.init) does not match the number of layers !! \n'))
 	}
@@ -166,7 +170,6 @@ bdm.ptsne <- function(data, bdm, theta = 0.5, Y.init = NULL, mpi.cl = NULL, thre
 		})
 		print(bdm$t$dataExport)
 	}
-	#
 	bdm$ptsne <- list(threads = threads, layers = layers, theta = theta, gain = gain, momentum = momentum, qDecay = qDecay, Y = Y.init)
 	#
 	bdm <- ptsne.get(cl, bdm, info)
@@ -175,6 +178,7 @@ bdm.ptsne <- function(data, bdm, theta = 0.5, Y.init = NULL, mpi.cl = NULL, thre
 	cluster.stop(cl)
 	return(bdm)
 }
+
 
 #' Restart pt-SNE
 #'
@@ -221,6 +225,7 @@ bdm.restart <- function(data, bdm, epochs = NULL, iters = NULL, mpi.cl = NULL, t
 	# +++ run ptsne
 	if (!is.null(epochs)) bdm$epochs <- epochs
 	if (!is.null(iters)) bdm$iters <- iters
+	if (info == 2) progress <- bdm$progress
 	cost <- bdm$ptsne$cost
 	size <- bdm$ptsne$size
 	bdm <- ptsne.restart(cl, bdm, info)
@@ -234,10 +239,12 @@ bdm.restart <- function(data, bdm, epochs = NULL, iters = NULL, mpi.cl = NULL, t
 		}
 	}
 	bdm$ptsne$size <- c(size, bdm$ptsne$size)
+	if (info == 2) bdm$progress <- c(progress, bdm$progress)
 	# +++ stop cluster
 	cluster.stop(cl)
 	return(bdm)
 }
+
 
 #' Perplexity-adaptive kernel density estimation
 #'
@@ -342,7 +349,7 @@ bdm.wtt <- function(bdm, layer = 1)
 #'
 #' @param layer The ptSNE output layer. Default value is \var{layer = 1}.
 #'
-#' @param merged Default value is \var{merged = TRUE}. If \var{merged = TRUE} and the clustering has been merged, the labels are the ids of the clusters after merging. If \var{merged = FALSE} or the clustering has not been merged, the labels indicate the ids of to the top-level clustering.
+#' @param merged Default value is \var{merged = FALSE}. If \var{merged = TRUE} and the clustering has been merged, the labels are the ids of the clusters after merging. If \var{merged = FALSE} or the clustering has not been merged, the labels indicate the ids of to the top-level clustering.
 #'
 #' @return A vector of data-point clustering labels.
 #'
@@ -351,7 +358,7 @@ bdm.wtt <- function(bdm, layer = 1)
 #' bdm.example()
 #' m.labels <- bdm.labels(ex$map)
 
-bdm.labels <- function(bdm, merged = T, layer = 1){
+bdm.labels <- function(bdm, merged = F, layer = 1){
 	# At.!!! there is an internal version of this function (for simplicity)
 	# check merge.labels() in bdm_merge.R if any change is to be made here !!
 	if (!is.null(bdm$wtt[[layer]]))

@@ -26,53 +26,108 @@ using namespace std;
 
 // DBL_EPSILON = 1.0e-9 (DBL_MIN = 1.0e-37)
 
+// SHOOT OFF CONDITION CONTROL
+// . minL1
+// static const double minAtrForce = 1.0e-6 /(1.0 +2.0e-12);
+// .minL2 (this one makes sense but does not work either)
+// static const double minAtrForce = std::sqrt(DBL_EPSILON) /(1.0 +2.0 *DBL_EPSILON);
+// .minL3
+// static const double minAtrForce = 2.0 *std::sqrt(DBL_EPSILON) /(1.0 +2.0 *DBL_EPSILON);
+// .minL interval
+// static const double lowL = 1.0 /std::sqrt(6.0);
+// static const double uppL = 1.0 /std::sqrt(2.0);
+
 // t-SNE constructor
 TSNE::TSNE(unsigned int z, unsigned int nnSize, unsigned int mY, int max_iter, double theta, double lRate, double alpha, double gain, double zP) : z(z), nnSize(nnSize), mY(mY), max_iter(max_iter), theta(theta), eta(lRate), alpha(alpha), gain(gain), zP(zP)
 {}
 
 // Perform t-SNE (only for 2D embedding !!)
-void TSNE::run2D(double* P, unsigned int* W, double* Y)
+void TSNE::run2D(double* P, unsigned int* W, double* Y, int dbgRow, unsigned int thread_rank, unsigned int epoch)
 {
 	// . gradient forces
 	double* atrF = (double*) calloc(z *mY, sizeof(double));
 	double* repF = (double*) calloc(z *mY, sizeof(double));
+
 	// . position updates
 	double* updY = (double*) calloc(z *mY, sizeof(double));
 	// . position gains
 	double* etaG = (double*) calloc(z *mY, sizeof(double));
-	// . step size is reset at each new epoch !!
+
+	// reset step size at each new epoch !!
 	for (unsigned int k = 0; k < z *mY; k++) etaG[k] = 1.0;
-	// +++ gradient descent
+	// double maxGain = 4.0;
+
+	// . update clipping value
+	// double uClip = eta /(2.0 *std::log(z *nnSize));
+
+	// debugging option
+	// char fName [12];
+	// int lName = std::sprintf(fName, "epoch%02u_%03u", epoch, thread_rank);
+    // std::ofstream dbgFile;
+    // dbgFile.open(fName, std::ios::app);
+
+	// +++ optimization
 	double zQ = .0;
 	for (int iter = 0; iter < max_iter; iter++) {
-		Gradient(P, W, Y, atrF, repF, zQ);
-		// update (with momentum and learning rate)
+
+		TSNE::getForces(P, W, Y, atrF, repF, zQ);
+
 		for (unsigned int i = 0, k = 0; i < z; i++) {
 			for (unsigned int d = 0; d < mY; d++, k++) {
+
+				// update (with momentum and learning rate)
 				double dY =  atrF[k] /zP -repF[k] /zQ;
 				if (gain > 0) {
 					if (signbit(dY) != signbit(updY[k])) etaG[k] += (gain *.1);
 					else etaG[k] *= (1.0 -gain /10.0);
+					// if ((maxGain > 0) && (etaG[k] > maxGain)) etaG[k] = maxGain;
 				}
 				// update embedding position
 				updY[k] = alpha *updY[k] -eta *etaG[k] *dY;
 				Y[k] += updY[k];
+
+				// debugging
+				// if (i == dbgRow) {
+				// 	dbgFile << epoch << ",";
+				// 	dbgFile << iter << ",";
+				// 	dbgFile << d << ",";
+				// 	dbgFile << zP << ",";
+				// 	dbgFile << atrF[k] /zP << ",";
+				// 	dbgFile << zQ << ",";
+				// 	dbgFile << repF[k] /zQ << ",";
+				// 	dbgFile << dY << ",";
+				// 	dbgFile << etaG[k] << ",";
+				// 	dbgFile << updY[k] << ",";
+				// 	dbgFile << Y[k] << "\n";
+				// }
+
+				// clip position update to the size of the embedding (shoot off control)
+				// if (std::abs(Y[k]) > uClip){
+				// 	Y[k] = std::signbit(Y[k]) ? -uClip : uClip;
+				// 	updY[k] = 0.0;
+				// 	etaG[k] = 1.0;
+				// }
+
 				// reset attractive/repulsive forces
 				atrF[k] = .0;
 				repF[k] = .0;
 			}
 		}
 	}
+
+	// debugging option
+	// dbgFile.flush();
+	// dbgFile.close();
+
 	// +++ Clean up memory
 	free(atrF); atrF  = NULL;
 	free(repF); repF = NULL;
 	free(updY); updY = NULL;
 	free(etaG); etaG = NULL;
-	return;
 }
 
-// Compute gradient forces of the t-SNE cost function (EXACT)
-void TSNE::Gradient(double* P, unsigned int* W, double* Y, double* atrF, double* repF, double& zQ)
+// Compute gradient forces of the t-SNE cost function
+void TSNE::getForces(double* P, unsigned int* W, double* Y, double* atrF, double* repF, double& zQ)
 {
 	double L [mY];
 	// attractive forces
@@ -83,7 +138,7 @@ void TSNE::Gradient(double* P, unsigned int* W, double* Y, double* atrF, double*
 				double Lij = 1.0;
 				for(unsigned int d = 0; d < mY; d++) {
 					L[d] = Y[i *mY +d] -Y[j *mY +d];
-					Lij += L[d] *L[d];
+					Lij += (L[d] *L[d]);
 				}
 				double Qij = 1.0 /Lij;
 				for(unsigned int d = 0; d < mY; d++) {
@@ -101,7 +156,7 @@ void TSNE::Gradient(double* P, unsigned int* W, double* Y, double* atrF, double*
 				double Lij = 1.0;
 				for(unsigned int d = 0; d < mY; d++) {
 					L[d] = Y[i *mY +d] -Y[j *mY +d];
-					Lij += L[d] *L[d];
+					Lij += (L[d] *L[d]);
 				}
 				double Qij = 1.0 /Lij;
 				for(unsigned int d = 0; d < mY; d++) {

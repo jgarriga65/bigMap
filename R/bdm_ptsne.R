@@ -118,7 +118,7 @@ ptsne.restart <- function(cl, bdm, info)
 # +++ distributed ptSNE implementation with shared memory
 # -----------------------------------------------------------------------------
 
-sckt.ptsne <- function(cl, bdm, info)
+sckt.ptsne <- function(cl, bdm, progress)
 {
 	# setup parameters
 	threads  <- bdm$ptsne$threads
@@ -146,7 +146,7 @@ sckt.ptsne <- function(cl, bdm, info)
 
 	# export setup parameters
 	clusterExport(cl, c('layers', 'nnSize', 'zSize', 'theta', 'gain'), envir = environment())
-	clusterExport(cl, c('info'), envir = environment())
+	clusterExport(cl, c('progress'), envir = environment())
 
 	# initial mapping (by default, random circular embedding of radius 1)
 	if (!is.null(bdm$ptsne$Y)) {
@@ -215,7 +215,7 @@ sckt.ptsne <- function(cl, bdm, info)
 
 	# report starting information
 	avgCost <- mean(Cbm[, 1])
-	if (info >= 0) {
+	if (progress >= 0) {
 		nulL <- ptsne.info(threads, zSize, nnSize, epochs, iters, 0, avgCost, eSize[1], t0, theta)
 	}
 
@@ -239,7 +239,7 @@ sckt.ptsne <- function(cl, bdm, info)
 			alpha <- momentum *(1 -e /scheme$epochs)
 		clusterExport(cl, c('lRate', 'alpha'), envir = environment())
 		# report status
-		if (info >=0) {
+		if (progress >=0) {
 			avgCost <- mean(Cbm[, (e +1)])
 			epoch.info(e, epochs, avgCost, eSize[(e +1)], t0, te, lRate)
 		}
@@ -249,8 +249,8 @@ sckt.ptsne <- function(cl, bdm, info)
 	bdm$ptsne$cost <- as.matrix(Cbm[, 1:(epochs +1)])
 	bdm$ptsne$size <- eSize
 
-	if (info == 2) {
-		bdm$movie <- clusterEvalQ(cl, if (thread.rank == 0) w$mapp.list)[[1]]
+	if (progress == 2) {
+		bdm$progress <- clusterEvalQ(cl, if (thread.rank == 0) w$mapp.list)[[1]]
 	}
 
 	# report status
@@ -267,16 +267,15 @@ sckt.ptsne <- function(cl, bdm, info)
 
 sckt.ztsne <- function()
 {
-	# Att!!! bdm_glbl.R declares global variables: epoch
-	epoch <<- epoch +1
+	epoch <<- epoch +1	# Att.!! global variable
 	if (thread.rank == 0) {
 		# save current embedding to make movie
-		if (info == 2) {
+		if (progress == 2) {
 			w$mapp.list[[epoch]] <- list(epoch = epoch, Y = as.matrix(Ybm[ , 1:2]))
 		}
 	}
 	else {
-		zCost <- sckt_zTSNE(thread.rank, threads, layers, Xbm@address, Bbm@address, Ybm@address, Ibm@address, iters, nnSize, theta, lRate, alpha, gain, is.distance, is.sparse)
+		zCost <- sckt_zTSNE(thread.rank, epoch, threads, layers, Xbm@address, Bbm@address, Ybm@address, Ibm@address, iters, nnSize, theta, lRate, alpha, gain, is.distance, is.sparse)
 		Cbm[thread.rank, epoch] <- zCost
 	}
 }
@@ -285,7 +284,7 @@ sckt.ztsne <- function()
 # +++ ptSNE MPI
 # -----------------------------------------------------------------------------
 
-mpi.ptsne <- function(cl, bdm, info)
+mpi.ptsne <- function(cl, bdm, progress)
 {
 	# setup parameters
 	ppx      <- bdm$ppx$ppx
@@ -313,7 +312,7 @@ mpi.ptsne <- function(cl, bdm, info)
 
 	# export ptSNE setup parameters
 	clusterExport(cl, c('layers', 'nnSize', 'zSize', 'theta', 'gain'), envir = environment())
-	clusterExport(cl, c('info'), envir = environment())
+	clusterExport(cl, c('progress'), envir = environment())
 
 	# thread segments: row/col indexes in Y
 	zBrks <- lapply(seq(threads), function(z)
@@ -381,7 +380,7 @@ mpi.ptsne <- function(cl, bdm, info)
 	clusterExport(cl, c('epochs', 'iters'), envir = environment())
 
 	# +++ just for testing
-	# clusterEvalQ(cl, epoch <<- 0)
+	clusterEvalQ(cl, epoch <<- 0)
 	
 	# start
 	t0 <- Sys.time()
@@ -415,7 +414,7 @@ mpi.ptsne <- function(cl, bdm, info)
 			alpha <- momentum *(1 -e /scheme$epochs)
 		clusterExport(cl, c('lRate', 'alpha'), envir = environment())
 		# report status
-		if (info >= 0) {
+		if (progress >= 0) {
 			avgCost <- mean(eCost[, e+1])
 			epoch.info(e, epochs, avgCost, eSize[e +1], t0, te, lRate)
 		}
@@ -440,12 +439,11 @@ mpi.ptsne <- function(cl, bdm, info)
 
 mpi.ztsne <- function(zChnk)
 {
-	# Att!!! bdm_glbl.R declares global variables: epoch
-	epoch <<- epoch +1
+	epoch <<- epoch +1	# Att.!! We are using global variable epoch
 	if (thread.rank != 0) {
 		w$zI <-  zChnk[, 1]
 		w$zY <- zChnk[, 2:3]
-		mpi_zTSNE(thread.rank, Xbm@address, Bbm@address, w$zY, w$zI, iters, nnSize, theta, lRate, alpha, gain, is.distance, is.sparse)
+		mpi_zTSNE(thread.rank, epoch, Xbm@address, Bbm@address, w$zY, w$zI, iters, nnSize, theta, lRate, alpha, gain, is.distance, is.sparse)
 	}
 }
 

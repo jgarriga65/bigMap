@@ -27,7 +27,7 @@ using namespace Rcpp;
 
 // Exact/Approx. SOCKET implementation of t-SNE
 // [[Rcpp::export]]
-double sckt_zTSNE(unsigned int thread_rank, unsigned int threads, unsigned int layers, SEXP sexpX, SEXP sexpB, SEXP sexpY, SEXP sexpI, int iters, double nnSize, double theta, double lRate, double alpha, double gain, bool isDistance, bool isSparse)
+double sckt_zTSNE(unsigned int thread_rank, unsigned int epoch, unsigned int threads, unsigned int layers, SEXP sexpX, SEXP sexpB, SEXP sexpY, SEXP sexpI, int iters, double nnSize, double theta, double lRate, double alpha, double gain, bool isDistance, bool isSparse)
 {
 	// current mapping positions
 	Rcpp::XPtr<BigMatrix> bigY(sexpY);
@@ -38,7 +38,7 @@ double sckt_zTSNE(unsigned int thread_rank, unsigned int threads, unsigned int l
 	unsigned int nX = bigI -> nrow();
 
 	// get chunk breaks
-	std::vector<unsigned int> breaks (threads +1, 0);
+	std::vector<int> breaks (threads +1, 0);
 	for (unsigned int b = 0; b < threads; b++) breaks[b] = (int) b *(nX +1.0) /threads;
 	breaks[threads] = nX;
 	// get thread-size
@@ -87,7 +87,7 @@ double sckt_zTSNE(unsigned int thread_rank, unsigned int threads, unsigned int l
 	// +++ TSNE instance
 	TSNE* tsne = new TSNE(thread_size, nnSize, 2, iters, theta, lRate, alpha, gain, affmtx ->zP);
 	// +++ run t-SNE
-	tsne ->run2D(thread_P, thread_W, thread_Y);
+	tsne ->run2D(thread_P, thread_W, thread_Y, affmtx ->debugRow, thread_rank, epoch);
 	// +++ compute cost
 	thread_Cost = tsne ->Cost(thread_P, thread_W, thread_Y);
 
@@ -153,7 +153,7 @@ void updateY(arma::Mat<double>& Y, const arma::Col<int>& I, const Rcpp::List& zM
 
 // Exact/Approx. MPI implementation of t-SNE
 // [[Rcpp::export]]
-double mpi_zTSNE(unsigned int thread_rank, SEXP sexpX, SEXP sexpB, arma::Mat<double> &Y, arma::Col<int> indexes, int iters, double nnSize, double theta, double lRate, double alpha, double gain, bool isDistance, bool isSparse)
+double mpi_zTSNE(unsigned int thread_rank, unsigned int epoch, SEXP sexpX, SEXP sexpB, arma::Mat<double> &Y, arma::Col<int> indexes, int iters, double nnSize, double theta, double lRate, double alpha, double gain, bool isDistance, bool isSparse)
 {
 	// unsigned int N = bmL->nrow();
 	unsigned int thread_size = Y.n_rows;
@@ -186,7 +186,7 @@ double mpi_zTSNE(unsigned int thread_rank, SEXP sexpX, SEXP sexpB, arma::Mat<dou
 	// +++ TSNE instance
 	TSNE* tsne = new TSNE(thread_size, nnSize, 2, iters, theta, lRate, alpha, gain, affmtx ->zP);
 	// +++ run t-SNE
-	tsne ->run2D(thread_P, thread_W, thread_Y);
+	tsne ->run2D(thread_P, thread_W, thread_Y, affmtx ->debugRow, thread_rank, epoch);
 	// +++ compute cost
 	thread_Cost = tsne ->Cost(thread_P, thread_W, thread_Y);
 

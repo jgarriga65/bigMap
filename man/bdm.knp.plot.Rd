@@ -4,10 +4,12 @@
 \alias{bdm.knp.plot}
 \title{k-ary Neighborhood Preservation plot}
 \usage{
-bdm.knp.plot(bdm)
+bdm.knp.plot(bdm, ppxfrmt = 0)
 }
 \arguments{
 \item{bdm}{A \var{bdm} data mapping instance, or a list of them to make a comparative plot.}
+
+\item{ppxfrmt}{Format of \var{ppx} in the legend. If \code{ppxfrmt > 1} then \var{ppx} is shown as a fraction of the data set size and \var{ppxfrmt} is the number of decimal digits. Default value is \code{ppxfrmt = 0} and then \var{ppx} is experessed in absolute value.}
 }
 \description{
 Log and linear plots of the k-ary Neighborhood Preservation
@@ -20,7 +22,7 @@ bdm.example()
 # --- compte the kNP
 m <- bdm.knp(ex$data, ex$map, threads = 4)
 # --- plot the kNP
-bdm.knp.plot(m)
+bdm.knp.plot(m, ppxfrmt = 0)
 }
 
 }

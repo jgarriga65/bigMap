@@ -3,7 +3,7 @@
 #'
 #' Starts the multi-core t-SNE (mtSNE) algorithm.
 #'
-#' @param dSet.data A \var{data.frame} or \var{matrix} with raw input-data. The dataset must not have duplicated rows.
+#' @param data A \var{data.frame} or \var{matrix} with raw input-data. The dataset must not have duplicated rows.
 #'
 #' @param is.distance Default value is \var{is.distance = FALSE}. TRUE indicates that raw data is a distance matrix.
 #'
@@ -36,9 +36,9 @@
 #' bdm.ptsne.plot(m)
 #' }
 
-bdm.mtsne <- function(dSet.data, is.distance = F, is.sparse = F, ppx = 100, theta = .5, iters = 250, mpi.cl = NULL, threads = 4, infoRate = 25)
+bdm.mtsne <- function(data, is.distance = F, is.sparse = F, ppx = 100, theta = .5, iters = 250, mpi.cl = NULL, threads = 4, infoRate = 25)
 {
-	m <- bdm_.mtsne(dSet.data, is.distance = is.distance, is.sparse = is.sparse, ppx = ppx, theta = theta, iters = iters, mpi.cl = mpi.cl, threads = threads, infoRate = infoRate)
+	m <- bd_.mtsne(data, is.distance = is.distance, is.sparse = is.sparse, ppx = ppx, theta = theta, iters = iters, mpi.cl = mpi.cl, threads = threads, infoRate = infoRate)
 	return(m)
 }
 
@@ -46,24 +46,30 @@ bdm.mtsne <- function(dSet.data, is.distance = F, is.sparse = F, ppx = 100, thet
 # +++ mtSNE and refinement t-SNE with naive parallelization
 # --------------------------------------------------------------------------------
 
-bdm_.mtsne <- function(dSet.data, is.distance = F, is.sparse = F, normalize = F, ppx = 100, xppx = 3.0, iters = 200, theta = .5, gain = 2.0, momentum = .8, qDecay = T, threads = 4, infoRate = 25, logSize = T, reset = F, movie = F, mpi.cl = NULL)
+bd_.mtsne <- function(data, is.distance = F, is.sparse = F, ppx = 100, theta = .5, iters = 250, mpi.cl = NULL, threads = 4, infoRate = 25)
 {
-	m <- bdm.init(dSet.data, is.distance = is.distance, is.sparse = is.sparse, ppx = ppx, threads = threads, mpi.cl = mpi.cl)
+	# ++++++++++++ !!! see settings in R/bdm_glbl.R for: normalize, xppx ++++++++++++++++++++
+
+	m <- bdm.init(data, is.distance = is.distance, is.sparse = is.sparse, ppx = ppx, mpi.cl = mpi.cl, threads = threads)
 	m$ppx <- m$ppx[[1]]
-	m.list <- bdm_.rtsne(dSet.data, m, ppx = ppx, xppx = xppx, iters = iters, theta = theta, momentum = momentum, qDecay = qDecay, gain = gain, threads = threads, infoRate = infoRate, logSize = logSize, reset = T, movie = movie, mpi.cl = mpi.cl)
+
+	m.list <- bd_.rtsne(data, m, ppx = ppx, theta = theta, iters = iters, mpi.cl = mpi.cl, threads = threads, infoRate = infoRate)
 	return(m.list[[2]])
 }
 
-bdm_.rtsne <- function(dSet.data, m, ppx, xppx = 3.0, iters = 100, theta = .5, gain = 2.0, momentum = .8, qDecay = T, threads = 4, infoRate = 25, logSize = T, reset = F, movie = F, mpi.cl = NULL)
+bd_.rtsne <- function(data, m, ppx, theta = .5, iters = 100, mpi.cl = NULL, threads = 4, infoRate = 25, gain = gain, momentum = momentum, qDecay = qDecay, logSize = T, reset = F, movie = F)
 {
+
+	# ++++++++++++ !!! see settings in R/bdm_glbl.R for: gain, momentum, qDecay ++++++++++++++++++++
+
 	m.list <- list(m)
 	# +++ start cluster
 	cl <- cluster.start(threads, mpi.cl)
-	if (is.null(cl)) return(m)
+	if (is.null(cl)) return(bdm)
 	# +++ export input data (if using mpi.cl it might have been already exported)
 	cat('+++ exporting data \n')
-	if (!is.null(dSet.data)) {
-		Xdata.exp(cl, dSet.data, m$is.distance, m$is.sparse, m$normalize)
+	if (!is.null(data)) {
+		Xdata.exp(cl, data, m$is.distance, m$is.sparse, m$normalize)
 	}
 	# +++ compute/export betas
 	if (m$ppx$ppx != ppx || m$ppx$xppx != xppx) {
@@ -173,7 +179,6 @@ thread.init <- function()
 {
 	if (thread.rank != 0) {
 		breaks <- c(sapply(1:threads, function(rank) (rank -1) *(nX +1.0) %/%threads), nX)
-		# Att!!! bdm_glbl.R declares global variables: z.ini, z.end, Pbm, Wbm, Rbm, Ubm, Gbm
 		# C++ indexes
 		z.ini <<- breaks[thread.rank];
 		z.end <<- breaks[thread.rank +1];

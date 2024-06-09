@@ -228,7 +228,7 @@ get.lvls <- function(x, lvls)
 	{
 		x.qntl <- quantile(x[!is.na(x)], seq(0, 1, length.out = lvls+1))
 		x.lbls <- c(1, which(diff(x.qntl) != 0) +1)
-		x.brks <- c(x.qntl[x.lbls], max(x)+1)
+		x.brks <- c(x.qntl[x.lbls], Inf)
 		if (length(x.isna) > 0) {
 			x[-x.isna] <- cut(x[-x.isna], x.brks[-length(x.brks)], labels = x.lbls[-length(x.lbls)], include.lowest = T, right = T)
 			x[x.isna] <- lvls +1
@@ -238,13 +238,4 @@ get.lvls <- function(x, lvls)
 		}
 	}
 	return(x)
-}
-
-# ------------------------------------------------------------------------------
-# source xtrs
-# ------------------------------------------------------------------------------
-
-bdm_.source <- function(file)
-{
-	source(paste('~/bigMap/xtrs/', file, '.R', sep = ''))
 }

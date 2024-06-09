@@ -33,6 +33,14 @@ using namespace std;
 
 // DBL_EPSILON = 1.0e-9 (DBL_MIN = 1.0e-37)
 
+// SHOOT OFF CONDITION CONTROL
+// . minL1
+// static const double minAtrForce = 1.0e-6 /(1.0 +2.0e-12);
+// .minL2 (this one makes sense but does not work either)
+static const double minAtrForce = std::sqrt(DBL_EPSILON) /(1.0 +2.0 *DBL_EPSILON);
+// .minL3
+// static const double minAtrForce = 2.0 *std::sqrt(DBL_EPSILON) /(1.0 +2.0 *DBL_EPSILON);
+
 // thread affinity matrix
 // [[Rcpp::export]]
 double thread_affMtx(unsigned int z_ini, unsigned int z_end, SEXP sexpX, bool isDistance, bool isSparse, SEXP sexpB, SEXP sexpP, SEXP sexpW)
@@ -55,11 +63,11 @@ double thread_affMtx(unsigned int z_ini, unsigned int z_end, SEXP sexpX, bool is
 	//
 	affMtx* affmtx = new affMtx(sexpX, sexpB, zIdx, z, nnSize);
 	if (isDistance)
-		affmtx ->mt_D2P(z_ini, z_end, thread_P, thread_W);
+		affmtx ->bh_D2P(z_ini, z_end, thread_P, thread_W);
 	else if (isSparse)
-		affmtx ->mt_S2P(z_ini, z_end, thread_P, thread_W);
+		affmtx ->bh_S2P(z_ini, z_end, thread_P, thread_W);
 	else
-		affmtx ->mt_X2P(z_ini, z_end, thread_P, thread_W);
+		affmtx ->bh_X2P(z_ini, z_end, thread_P, thread_W);
 	// P normalization factor
 	double zP = affmtx ->zP;
 	// free memory
@@ -184,14 +192,16 @@ Rcpp::List thread_mIter(unsigned int z_ini, unsigned int z_end, SEXP sexpP, SEXP
 		}
 		// update position
 		for (unsigned int d = 0, k = zi *mY; d < mY; d++, k++) {
-			// Att! atrF is not a vetor for all k but a double[mY]: atrF[d] !!!
-			double dY = atrF[d] /sumP -repF[k] /sumQ;
-			if (gain > .0) {
-				if (signbit(dY) != signbit(U[k])) G[k] += (gain *.1);
-				else G[k] *= (1.0 -gain /10.0);
-			}
-			U[k] = alpha *U[k] -eta *G[k] *dY;
-			new_Y[k] += U[k];
+			// Att! atrF is double atrF[mY] !!!
+			// if (std::abs(atrF[d] /sumP) > minAtrForce) {
+				double dY = atrF[d] /sumP -repF[k] /sumQ;
+				if (gain > .0) {
+					if (signbit(dY) != signbit(U[k])) G[k] += (gain *.1);
+					else G[k] *= (1.0 -gain /10.0);
+				}
+				U[k] = alpha *U[k] -eta *G[k] *dY;
+				new_Y[k] += U[k];
+			// }
 		}
 	}
 	// free memory
