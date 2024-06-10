@@ -9,17 +9,17 @@ $ sudo apt-get install r-cran-bigmemory
 
 #### Installing options
 
-##### 1. From within R (easiest)
-
-\> devtools::install_github('jgarriga65/bigMap')
-
-or you can use package *remotes* as well,
+##### 1. Easiest:
 
 \> install.packages('remotes')
 
 \> remotes::install_github('jgarriga65/bigMap')
 
-##### 2. Download the package source tarball
+##### 2. If you installed package 'devtools'
+
+\> devtools::install_github('jgarriga65/bigMap')
+
+##### 3. Download the package source tarball
 
 Click on the Code (green) button and download the .zip file. Uncompress and install from within R with,
 
