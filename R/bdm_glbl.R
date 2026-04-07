@@ -52,7 +52,7 @@ varNames <- c(varNames, 'k.max', 'sampling', 'zSampleSize')
 # Main settings (do not change !!)
 
 xppx <- 3
-normalize <- T
+normalize <- F
 
 momentum <- 0.8
 gain <- 2.0

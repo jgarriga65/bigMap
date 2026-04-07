@@ -1,8 +1,8 @@
 Package: bigMap
 Type: Package
 Title: Big Data Mapping
-Version: 4.6.2
-Date: 2024-06-01
+Version: 4.7-0
+Date: 2026-04-07
 Authors@R: c(
  person(given="Joan", family="Garriga", email="jgarriga@ceab.csic.es", role=c("aut", "cre")),
  person(given="Frederic", family="Bartumeus", email="fbartu@ceab.csic.es", role=c("aut"))
